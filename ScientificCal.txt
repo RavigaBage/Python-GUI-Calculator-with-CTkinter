@@ -1,0 +1,93 @@
+import customtkinter as tk
+import math
+
+def button_click(button_text):
+    if button_text == "AC":
+        display.delete(0, tk.END)
+    elif button_text == "⌫":
+        display.delete(len(display.get()) - 1, tk.END)
+    elif button_text == "=":
+        try:
+            result = eval(display.get())
+            display.delete(0, tk.END)
+            display.insert(tk.END, str(result))
+        except Exception as e:
+            display.delete(0, tk.END)
+            display.insert(tk.END, "Error")
+    elif button_text == "sin⁻¹":
+        try:
+            result = math.asin(float(display.get()))
+            display.delete(0, tk.END)
+            display.insert(tk.END, str(result))
+        except ValueError:
+            display.delete(0, tk.END)
+            display.insert(tk.END, "Error")
+    elif button_text == "cos⁻¹":
+        try:
+            result = math.acos(float(display.get()))
+            display.delete(0, tk.END)
+            display.insert(tk.END, str(result))
+        except ValueError:
+            display.delete(0, tk.END)
+            display.insert(tk.END, "Error")
+    elif button_text == "tan⁻¹":
+        try:
+            result = math.atan(float(display.get()))
+            display.delete(0, tk.END)
+            display.insert(tk.END, str(result))
+        except ValueError:
+            display.delete(0, tk.END)
+            display.insert(tk.END, "Error")
+    elif button_text == "log⁻¹":
+        try:
+            result = math.log(float(display.get()))
+            display.delete(0, tk.END)
+            display.insert(tk.END, str(result))
+        except ValueError:
+            display.delete(0, tk.END)
+            display.insert(tk.END, "Error")
+    elif button_text == "x²":
+        try:
+            result = eval(display.get()) ** 2
+            display.delete(0, tk.END)
+            display.insert(tk.END, str(result))
+        except Exception as e:
+            display.delete(0, tk.END)
+            display.insert(tk.END, "Error")
+    elif button_text == "e":
+        display.insert(tk.END, math.e)
+    elif button_text == "%":
+        try:
+            result = eval(display.get()) / 100
+            display.delete(0, tk.END)
+            display.insert(tk.END, str(result))
+        except Exception as e:
+            display.delete(0, tk.END)
+            display.insert(tk.END, "Error")
+    else:
+        display.insert(tk.END, button_text)
+
+root = tk.Tk()
+root.title("Scientific Calculator")
+
+display = tk.Entry(root, font=("Arial", 20), width=30, borderwidth=5, relief="ridge")
+display.grid(row=0, column=0, columnspan=6, padx=10, pady=10)
+
+buttons = [
+    "7", "8", "9", "+", "AC", "⌫",
+    "4", "5", "6", "-", "×", "÷",
+    "1", "2", "3", ".", "±", "=",
+    "0", "%", "x²", "tan⁻¹", "cos⁻¹", "sin⁻¹", "log⁻¹", "e"
+]
+
+row_val = 1
+col_val = 0
+for button_text in buttons:
+    button = tk.Button(root, text=button_text, padx=20, pady=10, font=("Arial", 14), command=lambda btn=button_text: button_click(btn))
+    button.grid(row=row_val, column=col_val, padx=5, pady=5)
+    col_val += 1
+    if col_val == 6:
+        col_val = 0
+        row_val += 1
+
+root.mainloop()
