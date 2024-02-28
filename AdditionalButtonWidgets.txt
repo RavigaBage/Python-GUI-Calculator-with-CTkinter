@@ -1,0 +1,84 @@
+# Additional button widgets
+button33 = customtkinter.CTkButton(
+    master=frame,
+    text="%",
+    font=("Roboto", 20),
+    width=70,
+    height=45,
+    fg_color="#303031",
+    hover_color="#0773a4",
+    command=lambda: Calc_input_display("%"),
+)
+button33.grid(column=6, row=7, padx=(0, 3), pady=(0, 5))
+
+button34 = customtkinter.CTkButton(
+    master=frame,
+    text="x²",
+    font=("Roboto", 20),
+    width=70,
+    height=45,
+    fg_color="#303031",
+    hover_color="#0773a4",
+    command=lambda: Calc_input_display("x²"),
+)
+button34.grid(column=1, row=8, padx=(0, 3), pady=(0, 5))
+
+button35 = customtkinter.CTkButton(
+    master=frame,
+    text="tan⁻¹",
+    font=("Roboto", 20),
+    width=70,
+    height=45,
+    fg_color="#303031",
+    hover_color="#0773a4",
+    command=lambda: Calc_input_display("tan⁻¹"),
+)
+button35.grid(column=2, row=8, padx=(0, 3), pady=(0, 5))
+
+button36 = customtkinter.CTkButton(
+    master=frame,
+    text="cos⁻¹",
+    font=("Roboto", 20),
+    width=70,
+    height=45,
+    fg_color="#303031",
+    hover_color="#0773a4",
+    command=lambda: Calc_input_display("cos⁻¹"),
+)
+button36.grid(column=3, row=8, padx=(0, 3), pady=(0, 5))
+
+button37 = customtkinter.CTkButton(
+    master=frame,
+    text="sin⁻¹",
+    font=("Roboto", 20),
+    width=70,
+    height=45,
+    fg_color="#303031",
+    hover_color="#0773a4",
+    command=lambda: Calc_input_display("sin⁻¹"),
+)
+button37.grid(column=4, row=8, padx=(0, 3), pady=(0, 5))
+
+button38 = customtkinter.CTkButton(
+    master=frame,
+    text="log⁻¹",
+    font=("Roboto", 20),
+    width=70,
+    height=45,
+    fg_color="#303031",
+    hover_color="#0773a4",
+    command=lambda: Calc_input_display("log⁻¹"),
+)
+button38.grid(column=5, row=8, padx=(0, 3), pady=(0, 5))
+
+button39 = customtkinter.CTkButton(
+    master=frame,
+    text="e",
+    font=("Roboto", 20),
+    width=70,
+    height=45,
+    fg_color="#303031",
+    hover_color="#0773a4",
+    command=lambda: Calc_input_display("e"),
+)
+button39.grid(column=6, row=8, padx=(0, 3), pady=(0, 5))
