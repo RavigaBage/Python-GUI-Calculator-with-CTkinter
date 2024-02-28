@@ -90,6 +90,21 @@ def Calc_input_display(value):
     elif a.isnumeric():
         if ExpFormation == "":
             checker += "0"
+            checker2 = str(numericObg) + a
+            if checker != checker2:
+                numericObg += a
+        else:
+            checker = ExpFormation + "0"
+            checker2 = ExpFormation + a
+            if checker != checker2:
+                ExpFormation += a
+
+        checker = ""
+        checker2 = ""
+
+    elif a == ".":
+        if ExpFormation == "":
+            checker += "0.0"
             checker2 = numericObg + a
             if checker != checker2:
                 numericObg += a
@@ -101,6 +116,7 @@ def Calc_input_display(value):
 
         checker = ""
         checker2 = ""
+
     elif a in basicArrays:
         if numericObg == "" and ExpFormation == "":
             print("No function will be passed")
@@ -146,9 +162,13 @@ def Calc_input_display(value):
         if ExpFormation != "":
             userInput.append(ExpFormation)
 
-        if conditionChecker(userInput) == True:
-            computeResult()
+        InputList = bracket_solu(userInput)
+        print(bracket_solu(userInput), InputList)
+
+        if conditionChecker(InputList) == True:
+            computeResult(InputList)
         else:
+            print(conditionChecker(userInput))
             Ans = "Mathematical Error"
 
         entry.delete(0, "end")
@@ -162,56 +182,142 @@ def Calc_input_display(value):
         entry.insert(0, OriginalData)
 
 
-def computeResult():
-    global userInput
+def computeResult(userInput):
     global Ans
-
     value = userInput[0]
     index = 0
-
+    multiFactor = 0
     if len(userInput) == 0:
-        return "Cant Compute"
+        print("Cant Compute")
     else:
+
         for entry in userInput:
             entry = str(entry)
             # solve breakdown complex
             if "tan" in entry:
                 index = userInput.index(entry)
-                a, b = entry.split(",")
-                print(a, b)
-                value = math.tan(int(b))
+                if len(userInput) != index + 1 and userInput[index + 1] == "×":
+                    value = math.tan(float(userInput[index + 2]))
+                    multiFactor = 1
+                else:
+                    a, b = entry.split(",")
+                    value = math.tan(float(b))
             if "sin" in entry:
                 index = userInput.index(entry)
-                a, b = entry.split(",")
-                print(a, b)
-                value = math.sin(int(b))
+                if len(userInput) != index + 1 and userInput[index + 1] == "×":
+                    value = math.sin(float(userInput[index + 2]))
+                    multiFactor = 1
+                else:
+                    a, b = entry.split(",")
+                    value = math.sin(float(b))
             if "cos" in entry:
                 index = userInput.index(entry)
-                a, b = entry.split(",")
-                value = math.cos(int(b))
+                if len(userInput) != index + 1 and userInput[index + 1] == "×":
+                    value = math.cos(float(userInput[index + 2]))
+                    multiFactor = 1
+                else:
+                    a, b = entry.split(",")
+                    value = math.cos(float(b))
             if "Rad" in entry:
                 index = userInput.index(entry)
-                a, b = entry.split(",")
-                value = math.radians(int(b))
+                if len(userInput) != index + 1 and userInput[index + 1] == "×":
+                    value = math.radians(float(userInput[index + 2]))
+                    multiFactor = 1
+                else:
+                    a, b = entry.split(",")
+                    value = math.radians(float(b))
+
             if "Deg" in entry:
                 index = userInput.index(entry)
-                a, b = entry.split(",")
-                value = math.degrees(int(b))
+                if len(userInput) != index + 1 and userInput[index + 1] == "×":
+                    value = math.degrees(float(userInput[index + 2]))
+                    multiFactor = 1
+                else:
+                    a, b = entry.split(",")
+                    value = math.degrees(float(b))
             if "√" in entry:
                 index = userInput.index(entry)
-                a, b = entry.split(",")
-                value = math.sqrt(int(b))
+                if len(userInput) != index + 1 and userInput[index + 1] == "×":
+                    value = math.sqrt(float(userInput[index + 2]))
+                    multiFactor = 1
+                else:
+                    a, b = entry.split(",")
+                    value = math.sqrt(float(b))
             if "log" in entry:
                 index = userInput.index(entry)
-                a, b = entry.split(",")
-                value = math.log10(int(b))
-            userInput[index] = value
+                if len(userInput) != index + 1 and userInput[index + 1] == "×":
+                    value = math.log10(float(userInput[index + 2]))
+                    multiFactor = 1
+                else:
+                    a, b = entry.split(",")
+                    value = math.log10(float(b))
+
+            if multiFactor != 1:
+                userInput[index] = value
+            else:
+                userInput[index] = value
+                userInput.pop(index + 1)
+                userInput.pop(index + 1)
+
+                print("printer here", userInput)
+            multiFactor = 0
+
         print("printer here", userInput)
 
-        PEMDAS(userInput)
+    PEMDAS(userInput)
+
+
+def bracket_solu(InputData):
+    startPosition = 0
+    EndPosition = 0
+    rangeData = 0
+    start = 0
+    new_InputData = []
+
+    para_thesis_List = []
+    if "(" in InputData:
+        startPosition = InputData.index("(")
+        EndPosition = InputData.index(")")
+        start = startPosition
+        # determin end of bracket
+        while start > -1:
+            if InputData[start] == "(":
+                startPosition = start
+                rangeData = 0
+            elif InputData[start] == ")":
+                break
+            else:
+                rangeData = rangeData + 1
+            start += 1
+
+        for i in range(rangeData):
+            para_thesis_List.append(InputData[startPosition + i + 1])
+
+        Ans = PEMDAS(para_thesis_List)
+
+        if PEMDAS(para_thesis_List) != False:
+            InputData.pop(startPosition)
+
+            InputData.pop(EndPosition - 1)
+
+            for i in range(rangeData):
+                if rangeData - 1 == i:
+                    InputData[startPosition] = Ans
+                else:
+                    InputData.pop(startPosition)
+
+        if "(" in InputData:
+            bracket_solu(InputData)
+        else:
+            new_InputData = InputData
+    else:
+        new_InputData = InputData
+    
+    return new_InputData
 
 
 def conditionChecker(userInput):
+
     if (
         userInput[len(userInput) - 1] == "("
         or userInput[len(userInput) - 1] in basicArrays
@@ -222,6 +328,7 @@ def conditionChecker(userInput):
             not userInput[len(userInput) - 1].isnumeric()
             and userInput[len(userInput) - 1] not in basicArrays
             and userInput[len(userInput) - 1] != ")"
+            and isfloat(userInput[len(userInput) - 1]) != True
         ):
             splita, splitb = userInput[len(userInput) - 1].split(",")
             if (
@@ -229,9 +336,10 @@ def conditionChecker(userInput):
                 and splita in complexArrays
                 or userInput[len(userInput) - 1] in basicArrays
             ):
+
                 return False
+
             else:
-                print("erw")
                 for entry in userInput:
                     index = userInput.index(entry)
                     if (index + 1) < len(userInput):
@@ -245,8 +353,12 @@ def conditionChecker(userInput):
                                 entry in basicArrays
                                 and userInput[index + 1] in basicArrays
                             ):
-                                print("185", entry)
-                                return False
+                                if entry == userInput[index + 1]:
+                                    print(entry, userInput[index + 1])
+                                    userInput.pop(index + 1)
+                                else:
+                                    print("185", entry)
+                                    return False
                             elif (
                                 entry in basicArrays
                                 and not userInput[index + 1].isnumeric()
@@ -255,11 +367,13 @@ def conditionChecker(userInput):
                                 print("191", entry)
                                 return False
                             elif (
-                                entry not in basicArrays
+                                not userInput[index + 1].isnumeric()
+                                and entry not in basicArrays
                                 and userInput[index + 1] not in basicArrays
                             ):
-                                return False
                                 print("197", entry)
+                                return False
+
                         else:
                             if entry == "" or entry == " ":
                                 print("208", entry)
@@ -284,10 +398,7 @@ def PEMDAS(inputData):
     negations = False
     value = ""
     newInputData = inputData
-    moves = 0
-    end = 0
-    endrange = 0
-    start = 0
+
     para_thesis_List = []
 
     if ")" in inputData:
@@ -438,7 +549,7 @@ def PEMDAS(inputData):
     Ans = str(newInputData[0])
     entry.delete(0, "end")
     entry.insert(0, Ans)
-    print(Ans)
+    return Ans
 
 
 def solvepara(inputData):
@@ -574,6 +685,14 @@ def solvepara(inputData):
 
     print("para result", newInputData[0])
     return str(newInputData[0])
+
+
+def isfloat(num):
+    try:
+        float(num)
+        return True
+    except ValueError:
+        return False
 
 
 button = customtkinter.CTkButton(
@@ -940,5 +1059,6 @@ button32 = customtkinter.CTkButton(
 )
 
 button32.grid(column=6, row=7, padx=(0, 3), pady=(0, 5))
+
 
 root.mainloop()
