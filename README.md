@@ -17,7 +17,6 @@ A Python-based multi-functional calculator with scientific, conversion, and basi
 2. Install required python libraries:
    ```
    pip install tkinter ctkinter fractions decimal sympy
-   tkinter,ctkinter,sympy,fractions,decimal
    ```
 4. Run the main Python script:
    ```bash
@@ -36,9 +35,8 @@ A Python-based multi-functional calculator with scientific, conversion, and basi
 - Fork the repository on GitHub.
 - Create a new branch for your changes.
 - Make your code changes and commit them with clear messages.
-- Submit a pull request for review and integration.
 
 **Aditional note**
-- program is under production
+- program is under production hence algebra,matrix and calculus functions are not available at the moment
 
 
