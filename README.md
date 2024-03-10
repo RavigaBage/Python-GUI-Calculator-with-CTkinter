@@ -15,6 +15,8 @@ A Python-based multi-functional calculator with scientific, conversion, and basi
    git clone github.com/RavigaBage/Python-GUI-Calculator-with-CTkinter.git
    ```
 2. Install required python libraries:
+   ```
+   pip install tkinter ctkinter fractions decimal sympy
    tkinter,ctkinter,sympy,fractions,decimal
    ```
 4. Run the main Python script:
