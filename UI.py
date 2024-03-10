@@ -2,11 +2,14 @@ import customtkinter
 
 import tkinter as tk
 
-import math, pyglet
+import math
 from fractions import Fraction
 from decimal import Decimal
+from ctypes import windll, byref, create_unicode_buffer, create_string_buffer
 
-pyglet.font.add_file("font/casio-fx-9860gii.ttf")
+FR_PRIVATE = 0x10
+FR_NOT_ENUM = 0x20
+
 
 customtkinter.set_appearance_mode("dark")
 
@@ -36,12 +39,16 @@ PerformSpeed = False
 PerformTime = False
 PerformTemperature = False
 PerformMass = False
+PerformVolume = False
+PerformArea = False
 mode_menu_convert = False
 
 SpeedAns = ""
 SpeedData = ""
 compute = True
+volume = False
 speed = False
+Area = False
 Time = False
 Temperature = False
 Mass = False
@@ -85,7 +92,7 @@ ModeMenu_main_convert_Mass = customtkinter.CTkFrame(
     corner_radius=0,
 )
 MenuFrame.grid(column=1, row=2)
-entry = customtkinter.CTkEntry(
+entry = customtkinter.CTkTextbox(
     master=MenuFrame,
     width=WINW,
     height=140,
@@ -107,7 +114,28 @@ ModeMenu_main_convert_select = customtkinter.CTkFrame(
     fg_color="#2c2c2c",
     corner_radius=0,
 )
+ModeMenu_main_convert_Area = customtkinter.CTkFrame(
+    master=MenuFrame,
+    width=WINW,
+    height=140,
+    fg_color="#2c2c2c",
+    corner_radius=0,
+)
+ModeMenu_main_convert_volume = customtkinter.CTkFrame(
+    master=MenuFrame,
+    width=WINW,
+    height=140,
+    fg_color="#2c2c2c",
+    corner_radius=0,
+)
 ModeMenu_main_convert_select_speed = customtkinter.CTkFrame(
+    master=MenuFrame,
+    width=WINW,
+    height=140,
+    fg_color="#2c2c2c",
+    corner_radius=0,
+)
+ModeMenu_main_modes = customtkinter.CTkFrame(
     master=MenuFrame,
     width=WINW,
     height=140,
@@ -122,6 +150,20 @@ ModeMenu_main_convert_select_Time = customtkinter.CTkFrame(
     corner_radius=0,
 )
 ModeMenu_main_convert_select_Temperature = customtkinter.CTkFrame(
+    master=MenuFrame,
+    width=WINW,
+    height=140,
+    fg_color="#2c2c2c",
+    corner_radius=0,
+)
+ModeMenu_main_convert_select_Area = customtkinter.CTkFrame(
+    master=MenuFrame,
+    width=WINW,
+    height=140,
+    fg_color="#2c2c2c",
+    corner_radius=0,
+)
+ModeMenu_main_convert_select_volume = customtkinter.CTkFrame(
     master=MenuFrame,
     width=WINW,
     height=140,
@@ -153,6 +195,14 @@ entry_speed = customtkinter.CTkEntry(
     fg_color="red",
     corner_radius=0,
 )
+entry_volume = customtkinter.CTkEntry(
+    master=ModeMenu_main_convert_select_volume,
+    width=WINW,
+    height=100,
+    font=("Roboto", 24),
+    fg_color="red",
+    corner_radius=0,
+)
 entry_Temperature = customtkinter.CTkEntry(
     master=ModeMenu_main_convert_select_Temperature,
     width=WINW,
@@ -163,6 +213,14 @@ entry_Temperature = customtkinter.CTkEntry(
 )
 entry_Mass = customtkinter.CTkEntry(
     master=ModeMenu_main_convert_select_Mass,
+    width=WINW,
+    height=100,
+    font=("Roboto", 24),
+    fg_color="#2c2c2c",
+    corner_radius=0,
+)
+entry_Area = customtkinter.CTkEntry(
+    master=ModeMenu_main_convert_select_Area,
     width=WINW,
     height=100,
     font=("Roboto", 24),
@@ -214,6 +272,95 @@ Btns_innserFrame_innerFrame = customtkinter.CTkFrame(
 )
 Btns_innserFrame_innerFrame.grid(column=5, row=4)
 direction = 0
+
+
+ControlFrameBtns = customtkinter.CTkFrame(
+    master=FunctionFrames_innerFrame,
+    width=FunctionFramesBtnWidth * 2,
+    height=35 * 2,
+)
+ControlFrameBtns.grid(
+    row=2, rowspan=2, column=3, columnspan=2, padx=(0, 3), pady=(0, 5)
+)
+
+ControlFrameBtnsFrame = customtkinter.CTkFrame(
+    master=ControlFrameBtns,
+    width=FunctionFramesBtnWidth * 2,
+    fg_color="#2c2c2c",
+    height=35 * 2,
+)
+ControlFrameBtnsFrame.grid(
+    row=3,
+    column=3,
+)
+controlBtnWidth = (FunctionFramesBtnWidth * 2) / 3
+controlBtnHeight = 30
+buttonUp = customtkinter.CTkButton(
+    master=ControlFrameBtnsFrame,
+    text="↑",
+    font=("Roboto", 15, "bold"),
+    width=controlBtnWidth,
+    height=controlBtnHeight,
+    fg_color="#000",
+    hover_color="#0773a4",
+    command=lambda: CursorPosition("u"),
+)
+buttonUp.grid(row=1, column=2)
+
+buttonDown = customtkinter.CTkButton(
+    master=ControlFrameBtnsFrame,
+    text="↓",
+    font=("Roboto", 15, "bold"),
+    width=controlBtnWidth,
+    height=controlBtnHeight,
+    fg_color="#000",
+    hover_color="#0773a4",
+    command=lambda: CursorPosition("d"),
+)
+buttonDown.grid(row=3, column=2)
+
+
+buttonleft = customtkinter.CTkButton(
+    master=ControlFrameBtnsFrame,
+    text="←",
+    font=("Roboto", 15, "bold"),
+    width=controlBtnWidth,
+    height=controlBtnHeight,
+    fg_color="#000",
+    hover_color="#0773a4",
+    command=lambda: CursorPosition("l"),
+)
+buttonleft.grid(
+    row=2,
+    column=1,
+)
+
+buttonright = customtkinter.CTkButton(
+    master=ControlFrameBtnsFrame,
+    text="→",
+    font=("Roboto", 15, "bold"),
+    width=controlBtnWidth,
+    height=controlBtnHeight,
+    fg_color="#000",
+    hover_color="#0773a4",
+    command=lambda: CursorPosition("r"),
+)
+buttonright.grid(row=2, column=3, padx=(0, 3), pady=(0, 5))
+
+
+def CursorPosition(dr):
+    cursor = entry.index("insert")
+    splitData = cursor.split(".")
+    Vertical = splitData[0]
+    horizontal = splitData[1]
+    if dr == "l":
+        if int(horizontal) >= 0:
+            horizontal = int(horizontal) - 1
+    if dr == "r":
+        if int(horizontal) >= 0:
+            horizontal = int(horizontal) + 1
+    newCursor = str(Vertical) + "." + str(horizontal)
+    entry.mark_set("insert", newCursor)
 
 
 def Convertion_speed(a, b, val):
@@ -515,51 +662,167 @@ def Convertion_Mass(a, b, val):
     elif a == 1 and b == 6:  # Ukt -g
         Ans = val * 1016046.9088
     # USt
-    elif a == 1 and b == 0:  # USt - t
+    elif a == 2 and b == 0:  # USt - t
         Ans = val * 0.90718474
-    elif a == 1 and b == 1:  # USt - ukt
+    elif a == 2 and b == 1:  # USt - ukt
         Ans = val * 0.892851429
-    elif a == 1 and b == 2:  # USt -USk
+    elif a == 2 and b == 2:  # USt -USk
         Ans = val
-    elif a == 1 and b == 3:  # USt -lb
+    elif a == 2 and b == 3:  # USt -lb
         Ans = val * 2000
-    elif a == 1 and b == 4:  # USt -oz
+    elif a == 2 and b == 4:  # USt -oz
         Ans = val * 32000
-    elif a == 1 and b == 5:  # USt -kg
+    elif a == 2 and b == 5:  # USt -kg
         Ans = val * 907.18474
-    elif a == 1 and b == 6:  # USt -g
+    elif a == 2 and b == 6:  # USt -g
         Ans = val * 907184.74
     # lb
-    if a == 1 and b == 0:  # lb - t
+    if a == 3 and b == 0:  # lb - t
         Ans = val * 0.0004535924
-    elif a == 1 and b == 1:  # lb - ukt
+    elif a == 3 and b == 1:  # lb - ukt
         Ans = val * 0.0004464286
-    elif a == 1 and b == 2:  # lb -USk
+    elif a == 3 and b == 2:  # lb -USk
         Ans = val * 0.0005
-    elif a == 1 and b == 3:  # lb -lb
+    elif a == 3 and b == 3:  # lb -lb
         Ans = val
-    elif a == 1 and b == 4:  # lb -oz
+    elif a == 3 and b == 4:  # lb -oz
         Ans = val * 16
-    elif a == 1 and b == 5:  # lb -kg
+    elif a == 3 and b == 5:  # lb -kg
         Ans = val * 0.45359237
-    elif a == 1 and b == 6:  # lb -g
+    elif a == 3 and b == 6:  # lb -g
         Ans = val * 453.59237
 
         # ouz
-    elif a == 1 and b == 0:  # ouz - t
+    elif a == 4 and b == 0:  # ouz - t
         Ans = val * 0.0000283495
-    elif a == 1 and b == 1:  # ouz - ukt
+    elif a == 4 and b == 1:  # ouz - ukt
         Ans = val * 0.0000279018
-    elif a == 1 and b == 2:  # ouz -USk
+    elif a == 4 and b == 2:  # ouz -USk
         Ans = val * 0.00003125
-    elif a == 1 and b == 3:  # ouz -lb
+    elif a == 4 and b == 3:  # ouz -lb
         Ans = val * 0.0625
-    elif a == 1 and b == 4:  # ouz -oz
+    elif a == 4 and b == 4:  # ouz -oz
         Ans = val
-    elif a == 1 and b == 5:  # ouz -kg
+    elif a == 4 and b == 5:  # ouz -kg
         Ans = val * 0.0283495231
-    elif a == 1 and b == 6:  # ouz -g
+    elif a == 4 and b == 6:  # ouz -g
         Ans = val * 28.34953125
+
+        # in
+    elif a == 5 and b == 0:  # in - t
+        Ans = val * 0
+    elif a == 5 and b == 1:  # in - ukt
+        Ans = val * 0.0000064516
+    elif a == 5 and b == 2:  # in -USk
+        Ans = val * 0
+    elif a == 5 and b == 3:  # in -lb
+        Ans = val * 6.4516
+    elif a == 5 and b == 4:  # in -oz
+        Ans = val * 0.0069444444
+    elif a == 5 and b == 5:  # in -kg
+        Ans = val
+    elif a == 5 and b == 6:  # in -g
+        Ans = val * 0.00064516
+        # g
+    elif a == 6 and b == 0:  # g - t
+        Ans = val * 0.0002471054
+    elif a == 6 and b == 1:  # g - ukt
+        Ans = val * 0.01
+    elif a == 6 and b == 2:  # g -USk
+        Ans = val * 0.0001
+    elif a == 6 and b == 3:  # g -lb
+        Ans = val * 10000
+    elif a == 6 and b == 4:  # g -oz
+        Ans = val * 10.7639104167
+    elif a == 6 and b == 5:  # g -kg
+        Ans = val * 1550.0031000062
+    elif a == 6 and b == 6:  # g -g
+        Ans = val
+
+    return Ans
+
+
+def Convertion_Area(a, b, val):
+
+    Ans = val
+    val = int(val)
+    # ac
+    if a == 0 and b == 0:  # ac - ac
+        Ans = val
+    elif a == 0 and b == 1:  # ac - a
+        Ans = val * 40.468564224
+    elif a == 0 and b == 2:  # ac -ha
+        Ans = val * 0.4046856422
+    elif a == 0 and b == 3:  # ac -cm
+        Ans = val * 40468564.224
+    elif a == 0 and b == 4:  # ac -ft
+        Ans = val * 43560
+    elif a == 0 and b == 5:  # ac -in
+        Ans = val * 6272640
+    elif a == 0 and b == 6:  # ac -m
+        Ans = val * 4046.8564224
+
+    # a
+    elif a == 1 and b == 0:  # a - t
+        Ans = val * 0.0247105381
+    elif a == 1 and b == 1:  # a - ukt
+        Ans = val
+    elif a == 1 and b == 2:  # a -USk
+        Ans = val * 0.01
+    elif a == 1 and b == 3:  # a -lb
+        Ans = val * 1000000
+    elif a == 1 and b == 4:  # a -oz
+        Ans = val * 1076.391041671
+    elif a == 1 and b == 5:  # a -kg
+        Ans = val * 155000.31000062
+    elif a == 1 and b == 6:  # a -g
+        Ans = val * 100
+    # ha
+    elif a == 2 and b == 0:  # ha - t
+        Ans = val * 2.4710538147
+    elif a == 2 and b == 1:  # ha - ukt
+        Ans = val * 100
+    elif a == 2 and b == 2:  # ha -USk
+        Ans = val
+    elif a == 2 and b == 3:  # ha -lb
+        Ans = val * 100000000
+    elif a == 2 and b == 4:  # ha -oz
+        Ans = val * 107639.1041671
+    elif a == 2 and b == 5:  # ha -kg
+        Ans = val * 15500031.000062
+    elif a == 2 and b == 6:  # ha -g
+        Ans = val * 10000
+    # cm
+    if a == 3 and b == 0:  # cm - t
+        Ans = val * 0
+    elif a == 3 and b == 1:  # cm - ukt
+        Ans = val * 0.000001
+    elif a == 3 and b == 2:  # cm -USk
+        Ans = val * 0
+    elif a == 3 and b == 3:  # cm -lb
+        Ans = val
+    elif a == 3 and b == 4:  # cm -oz
+        Ans = val * 0.001076391
+    elif a == 3 and b == 5:  # cm -kg
+        Ans = val * 0.15500031
+    elif a == 3 and b == 6:  # cm -g
+        Ans = val * 0.0001
+
+        # ft
+    elif a == 4 and b == 0:  # ft - t
+        Ans = val * 0.0000229568
+    elif a == 4 and b == 1:  # ft - ukt
+        Ans = val * 0.00009290304
+    elif a == 4 and b == 2:  # ft -USk
+        Ans = val * 0.00000929030
+    elif a == 4 and b == 3:  # ft -lb
+        Ans = val * 929.0304
+    elif a == 4 and b == 4:  # ft -oz
+        Ans = val
+    elif a == 4 and b == 5:  # ft -kg
+        Ans = val * 144
+    elif a == 4 and b == 6:  # ft -g
+        Ans = val * 0.09290304
 
         # kg
     elif a == 1 and b == 0:  # kg - t
@@ -590,6 +853,154 @@ def Convertion_Mass(a, b, val):
     elif a == 1 and b == 5:  # g -kg
         Ans = val * 0.001
     elif a == 1 and b == 6:  # g -g
+        Ans = val
+
+    return Ans
+
+
+def Convertion_volume(a, b, val):
+
+    Ans = val
+    val = int(val)
+    # t
+    if a == 0 and b == 0:  # t - t
+        Ans = val
+    elif a == 0 and b == 1:  # t - ukt
+        Ans = val * 1.2009499255
+    elif a == 0 and b == 2:  # t -USk
+        Ans = val * 4.54609
+    elif a == 0 and b == 3:  # t -lb
+        Ans = val * 4546.09
+    elif a == 0 and b == 4:  # t -oz
+        Ans = val * 4546.09
+    elif a == 0 and b == 5:  # t -kg
+        Ans = val * 0.00454609
+    elif a == 0 and b == 6:  # t -g
+        Ans = val * 277.4194327916
+    elif a == 0 and b == 7:  # t -g
+        Ans = val * 0.1605436532
+
+    # Ukt
+    elif a == 1 and b == 0:  # Ukt - t
+        Ans = val * 0.8326741846
+    elif a == 1 and b == 1:  # Ukt - ukt
+        Ans = val
+    elif a == 1 and b == 2:  # Ukt -USk
+        Ans = val * 3.785411784
+    elif a == 1 and b == 3:  # Ukt -lb
+        Ans = val * 3785.411784
+    elif a == 1 and b == 4:  # Ukt -oz
+        Ans = val * 3785.411784
+    elif a == 1 and b == 5:  # Ukt -kg
+        Ans = val * 0.0037854118
+    elif a == 1 and b == 6:  # Ukt -g
+        Ans = val * 231
+    elif a == 1 and b == 7:  # Ukt -g
+        Ans = val * 0.1336805556
+    # USt
+    elif a == 2 and b == 0:  # USt - t
+        Ans = val * 0.2199692483
+    elif a == 2 and b == 1:  # USt - ukt
+        Ans = val * 0.2641720524
+    elif a == 2 and b == 2:  # USt -USk
+        Ans = val
+    elif a == 2 and b == 3:  # USt -lb
+        Ans = val * 1000
+    elif a == 2 and b == 4:  # USt -oz
+        Ans = val * 1000
+    elif a == 2 and b == 5:  # USt -kg
+        Ans = val * 0.001
+    elif a == 2 and b == 6:  # USt -g
+        Ans = val * 61.0237440947
+    elif a == 2 and b == 7:  # USt -g
+        Ans = val * 0.0353146667
+    # lb
+    if a == 3 and b == 0:  # lb - t
+        Ans = val * 0.0002199692
+    elif a == 3 and b == 1:  # lb - ukt
+        Ans = val * 0.0002641721
+    elif a == 3 and b == 2:  # lb -USk
+        Ans = val * 0.001
+    elif a == 3 and b == 3:  # lb -lb
+        Ans = val
+    elif a == 3 and b == 4:  # lb -oz
+        Ans = val * 1
+    elif a == 3 and b == 5:  # lb -kg
+        Ans = val * 0.000001
+    elif a == 3 and b == 6:  # lb -g
+        Ans = val * 0.0610237441
+    elif a == 2 and b == 7:  # USt -g
+        Ans = val * 0.0000353147
+
+        # ouz
+    elif a == 4 and b == 0:  # ouz - t
+        Ans = val * 0.0002199692
+    elif a == 4 and b == 1:  # ouz - ukt
+        Ans = val * 0.0002641721
+    elif a == 4 and b == 2:  # ouz -USk
+        Ans = val * 0.001
+    elif a == 4 and b == 3:  # ouz -lb
+        Ans = val * 1
+    elif a == 4 and b == 4:  # ouz -oz
+        Ans = val
+    elif a == 4 and b == 5:  # ouz -kg
+        Ans = val * 0.000001
+    elif a == 4 and b == 6:  # ouz -g
+        Ans = val * 0.0610237441
+    elif a == 4 and b == 7:  # ouz -g
+        Ans = val * 0.0000353147
+
+        # in
+    elif a == 5 and b == 0:  # in - t
+        Ans = val * 219.9692482991
+    elif a == 5 and b == 1:  # in - ukt
+        Ans = val * 264.1720523581
+    elif a == 5 and b == 2:  # in -USk
+        Ans = val * 1000
+    elif a == 5 and b == 3:  # in -lb
+        Ans = val * 1000000
+    elif a == 5 and b == 4:  # in -oz
+        Ans = val * 1000000
+    elif a == 5 and b == 5:  # in -kg
+        Ans = val
+    elif a == 5 and b == 6:  # in -g
+        Ans = val * 61023.744094732
+    elif a == 5 and b == 7:  # in -g
+        Ans = val * 35.3146667215
+
+        # g
+    elif a == 6 and b == 0:  # g - t
+        Ans = val * 0.0036046501
+    elif a == 6 and b == 1:  # g - t
+        Ans = val * 0.0043290043
+    elif a == 6 and b == 2:  # g - ukt
+        Ans = val * 0.016387064
+    elif a == 6 and b == 3:  # g -USk
+        Ans = val * 16.387064
+    elif a == 6 and b == 4:  # g -lb
+        Ans = val * 16.387064
+    elif a == 6 and b == 5:  # g -oz
+        Ans = val * 0.0000163871
+    elif a == 6 and b == 6:  # g -kg
+        Ans = val * 1
+    elif a == 6 and b == 7:  # g -g
+        Ans = val * 0.0005787037
+
+    elif a == 6 and b == 0:  # g - t
+        Ans = val * 6.228835459
+    elif a == 6 and b == 1:  # g - t
+        Ans = val * 7.4805194805
+    elif a == 6 and b == 2:  # g - ukt
+        Ans = val * 28.316846592
+    elif a == 6 and b == 3:  # g -USk
+        Ans = val * 28316.846592
+    elif a == 6 and b == 4:  # g -lb
+        Ans = val * 28316.846592
+    elif a == 6 and b == 5:  # g -oz
+        Ans = val * 0.0283168466
+    elif a == 6 and b == 6:  # g -kg
+        Ans = val * 1728
+    elif a == 6 and b == 7:  # g -g
         Ans = val
 
     return Ans
@@ -742,6 +1153,81 @@ def TemperatureConvertion(a, b, val):
             entry_Temperature.insert(0, SpeedData)
 
 
+def AreaConvertion(a, b, val):
+    global ModeMenu_main_convert_select_Area
+    global ModeMenu_main_convert
+    global PerformArea
+    global SpeedData
+    global SpeedAns
+
+    a = int(a) - 1
+    b = int(b) - 1
+    Area_functions = [
+        "(ac)",
+        "(a)",
+        "(ha)",
+        "(cm)",
+        "(in)",
+        "(m)",
+    ]
+    if not PerformArea:
+        PerformArea = True
+        print("truetem")
+        ModeMenu_main_convert.grid_remove()
+        ModeMenu_main_convert_Area.grid_remove()
+        ModeMenu_main_convert_select_Area.grid(column=1, row=2)
+        label_Area = customtkinter.CTkLabel(
+            master=ModeMenu_main_convert_select_Area,
+            width=(WINW),
+            text=str("convert: " + Area_functions[a] + "to: " + Area_functions[b]),
+            height=(40),
+            font=("Roboto", 12),
+            corner_radius=0,
+        )
+        label_Area.grid(column=1, row=1)
+        entry_Area.grid(column=1, row=2)
+
+    else:
+
+        a_str = str(val)
+        SpeedData += a_str
+
+        if a_str == "AC":
+            his_data.set(SpeedData + " " + str(SpeedAns))
+            entry_Area.delete(0, "end")
+            entry_Area.insert(0, "")
+            SpeedData = ""
+        elif a_str == "C":
+            CurrentVal = entry_Area.index("insert")
+            entry_Area.delete(CurrentVal - 1)
+            SpeedData = entry_Area.get()
+
+        elif val == "Ans":
+            entry_Area.delete(0, "end")
+            entry_Area.insert(0, SpeedAns)
+
+        elif val == "=":
+            print(entry_Area.get(), SpeedData)
+            if entry_Area.get().isnumeric():
+                SpeedAns = Convertion_Area(a, b, entry_Area.get())
+                print(
+                    a,
+                    b,
+                    entry_Area.get(),
+                    Convertion_Area(a, b, entry_Area.get()),
+                    "....",
+                )
+                entry_Area.delete(0, "end")
+                entry_Area.insert(0, str(SpeedAns) + " " + Area_functions[b])
+            else:
+                SpeedAns = "Syntax Error"
+                entry_Area.delete(0, "end")
+                entry_Area.insert(0, SpeedAns)
+        else:
+            entry_Area.delete(0, "end")
+            entry_Area.insert(0, SpeedData)
+
+
 def MassConvertion(a, b, val):
     global ModeMenu_main_convert_select_Mass
     global ModeMenu_main_convert
@@ -891,22 +1377,176 @@ def TimeConvertion(a, b, val):
             entry_Time.insert(0, SpeedData)
 
 
+def volumeConvertion(a, b, val):
+    global ModeMenu_main_convert_select_volume
+    global ModeMenu_main_convert
+    global PerformVolume
+    global SpeedData
+    global SpeedAns
+
+    a = int(a) - 1
+    b = int(b) - 1
+    volume_functions = [
+        "(gal)",
+        "(a)",
+        "(ha)",
+        "(cm)",
+        "(in)",
+        "(m)",
+    ]
+    if not PerformVolume:
+        PerformVolume = True
+        print("truetem")
+        ModeMenu_main_convert.grid_remove()
+        ModeMenu_main_convert_volume.grid_remove()
+        ModeMenu_main_convert_select_volume.grid(column=1, row=2)
+        label_volume = customtkinter.CTkLabel(
+            master=ModeMenu_main_convert_select_volume,
+            width=(WINW),
+            text=str("convert: " + volume_functions[a] + "to: " + volume_functions[b]),
+            height=(40),
+            font=("Roboto", 12),
+            corner_radius=0,
+        )
+        label_volume.grid(column=1, row=1)
+        entry_volume.grid(column=1, row=2)
+
+    else:
+
+        a_str = str(val)
+        SpeedData += a_str
+
+        if a_str == "AC":
+            his_data.set(SpeedData + " " + str(SpeedAns))
+            entry_volume.delete(0, "end")
+            entry_volume.insert(0, "")
+            SpeedData = ""
+        elif a_str == "C":
+            CurrentVal = entry_volume.index("insert")
+            entry_volume.delete(CurrentVal - 1)
+            SpeedData = entry_volume.get()
+
+        elif val == "Ans":
+            entry_volume.delete(0, "end")
+            entry_volume.insert(0, SpeedAns)
+
+        elif val == "=":
+            print(entry_volume.get(), SpeedData)
+            if entry_volume.get().isnumeric():
+                SpeedAns = Convertion_volume(a, b, entry_volume.get())
+                print(
+                    a,
+                    b,
+                    entry_volume.get(),
+                    Convertion_volume(a, b, entry_volume.get()),
+                    "....",
+                )
+                entry_volume.delete(0, "end")
+                entry_volume.insert(0, str(SpeedAns) + " " + volume_functions[b])
+            else:
+                SpeedAns = "Syntax Error"
+                entry_volume.delete(0, "end")
+                entry_volume.insert(0, SpeedAns)
+        else:
+            entry_volume.delete(0, "end")
+            entry_volume.insert(0, SpeedData)
+
+
 def Convertor(value):
     global direction
     global speed
     global Time
     global Temperature
     global Mass
+    global Area
+    global volume
     global mode_menu_convert
 
     right = "-->"
     left = "<--"
     value = str(value)
     if value == "1":
-        print("1")
+        if direction == right:
+            direction = left
+        else:
+            direction = right
+        mode_menu_convert = "In State"
+        Area = True
+        ModeMenu_main_convert.grid_remove()
+        # Arwa Modes functionality
+        ModeMenu_main_convert_Area.grid(column=2, row=4)
+        Area_functions = [
+            "Acres(ac)",
+            "Ares(a)",
+            "Hectares(ha)",
+            "Square centimetre(cm²)",
+            "Square feet(ft²)",
+            "Square inches(in²)",
+            "square metres(m²)",
+        ]
+        col_val = 1
+        row_val = 0
+        num = 0
+        for AreaChar in Area_functions:
+            row_val += 1
+            num += 1
+            label = customtkinter.CTkLabel(
+                master=ModeMenu_main_convert_Area,
+                width=(WINW / 2),
+                text=str(str(num) + " " + AreaChar + " " + direction),
+                height=(140 / 4),
+                font=("Calculator", 16, "bold"),
+                justify="left",
+                anchor="w",
+            )
+            label.grid(column=col_val, row=row_val)
+
+            if row_val == 4:
+                col_val += 1
+                row_val = 0
+
     elif value == "2":
-        print("2")
-    elif value == "3":
+        if direction == right:
+            direction = left
+        else:
+            direction = right
+        mode_menu_convert = "In State"
+        volume = True
+        ModeMenu_main_convert.grid_remove()
+        # volume Modes functionality
+        ModeMenu_main_convert_volume.grid(column=2, row=4)
+        volume_functions = [
+            "Uk gallons(gal)",
+            "Us gallons(gal)",
+            "Litres(l)",
+            "Millitres (ml)",
+            "cubic centimetres (cc)(cm)",
+            "Cubic metres (m)",
+            "Cubics metres (in)",
+            "Cubic feet (ft)",
+        ]
+        col_val = 1
+        row_val = 0
+        num = 0
+        for volumeChar in volume_functions:
+            row_val += 1
+            num += 1
+            label = customtkinter.CTkLabel(
+                master=ModeMenu_main_convert_volume,
+                width=(WINW / 2),
+                text=str(str(num) + " " + volumeChar + " " + direction),
+                height=(140 / 4),
+                font=("Calculator", 16, "bold"),
+                justify="left",
+                anchor="w",
+            )
+            label.grid(column=col_val, row=row_val)
+
+            if row_val == 4:
+                col_val += 1
+                row_val = 0
+
+    elif value == "7":
         if direction == right:
             direction = left
         else:
@@ -935,16 +1575,17 @@ def Convertor(value):
                 width=(WINW / 2),
                 text=str(str(num) + " " + TimeChar + " " + direction),
                 height=(140 / 4),
-                font=("Roboto", 12),
-                corner_radius=0,
+                font=("Calculator", 16, "bold"),
+                justify="left",
+                anchor="w",
             )
             label.grid(column=col_val, row=row_val)
 
             if row_val == 3:
                 col_val += 1
                 row_val = 0
-    elif value == "4":
-        print("4")
+    elif value == "8":
+        mode_menu_more()
     elif value == "5":
 
         if direction == right:
@@ -976,8 +1617,9 @@ def Convertor(value):
                 width=(WINW / 2),
                 text=str(str(num) + " " + MassChar + " " + direction),
                 height=(140 / 4),
-                font=("Roboto", 12),
-                corner_radius=0,
+                font=("Calculator", 16, "bold"),
+                justify="left",
+                anchor="w",
             )
             label.grid(column=col_val, row=row_val)
 
@@ -995,14 +1637,14 @@ def Convertor(value):
         # speed Modes functionality
         ModeMenu_main_convert_speed.grid(column=2, row=4)
         Speed_functions = [
-            "Meter per second (m/s)",
-            "Metres per hour (m/h)",
-            "Kilometres per second (km/s)",
-            "Kilometres per hour(km/h)",
-            "inches per second (in/s)",
-            "Inches per hour(in/h)",
-            "Miles per second(mi/s)",
-            "Miles per hour(mi/h)",
+            "Meter per second",
+            "Metres per hour",
+            "Kilometres per second",
+            "Kilometres per hour",
+            "inches per second",
+            "Inches per hour",
+            "Miles per second",
+            "Miles per hour",
         ]
         col_val = 1
         row_val = 0
@@ -1015,8 +1657,9 @@ def Convertor(value):
                 width=(WINW / 2),
                 text=str(str(num) + " " + speedChar + " " + direction),
                 height=(140 / 4),
-                font=("Roboto", 12),
-                corner_radius=0,
+                font=("Calculator", 16, "bold"),
+                justify="left",
+                anchor="w",
             )
             label.grid(column=col_val, row=row_val)
 
@@ -1024,9 +1667,9 @@ def Convertor(value):
                 col_val += 1
                 row_val = 0
 
-    elif value == "7":
-        print("here")
-    elif value == "8":
+    elif value == "3":
+        print("3")
+    elif value == "4":
         if direction == right:
             direction = left
         else:
@@ -1052,8 +1695,9 @@ def Convertor(value):
                 width=(WINW / 2),
                 text=str(str(num) + " " + TemperatureChar + " " + direction),
                 height=(140 / 4),
-                font=("Roboto", 12),
-                corner_radius=0,
+                font=("Calculator", 16, "bold"),
+                justify="left",
+                anchor="w",
             )
             label.grid(column=col_val, row=row_val)
 
@@ -1065,12 +1709,15 @@ def mode_menu_reset():
     global PerformTime
     global PerformMass
     global PerformTemperature
+    global PerformVolume
     global SpeedAns
     global SpeedData
     global compute
     global Temperature
     global Mass
+    global Area
     global Time
+    global volume
     global speed
     global ConvertTo
     global ConvertFrom
@@ -1094,30 +1741,46 @@ def mode_menu_reset():
     ModeMenu_main_convert_select.grid_remove()
     ModeMenu_main_convert_select_speed.grid_remove()
     ModeMenu_main_convert_speed.grid_remove()
+    ModeMenu_main_convert_Area.grid_remove()
     ModeMenu_main_convert_select_Time.grid_remove()
     ModeMenu_main_convert_Temperature.grid_remove()
     ModeMenu_main_convert_select_Mass.grid_remove()
+    ModeMenu_main_convert_select_volume.grid_remove()
     ModeMenu_main_convert_Time.grid_remove()
+    ModeMenu_main_convert_volume.grid_remove()
     ModeMenu_main_convert_Mass.grid_remove()
     ModeMenu_main_convert_select_Temperature.grid_remove()
+    ModeMenu_main_convert_select_Area.grid_remove()
+    ModeMenu_main_modes.grid_remove()
     ModeMenu_main_convert.grid_remove()
     PerformSpeed = False
     PerformTime = False
+    PerformArea = False
     PerformTemperature = False
     PerformMass = False
+    PerformVolume = False
     SpeedAns = ""
     SpeedData = ""
     SpTime = ""
     compute = True
     speed = False
     Time = False
+    Area = False
     Mass = False
+    volume = False
     Temperature = False
     ConvertTo = 0
     ConvertFrom = 0
     entry.grid(column=1, row=1)
     # empty entry slots
-    EntrySlots = [entry_speed, entry_Time, entry_Temperature, entry_Mass]
+    EntrySlots = [
+        entry_speed,
+        entry_Time,
+        entry_Temperature,
+        entry_Mass,
+        entry_Area,
+        entry_volume,
+    ]
     for entryFrame in EntrySlots:
         entryFrame.delete(0, "end")
         entryFrame.insert(0, " ")
@@ -1129,8 +1792,6 @@ def mode_menu_reset():
 def mode_menu(value):
     global mode_menu_convert
     global compute
-
-    print("ppopo", mode_menu_convert)
     if value == "mode_menu_convert":
         if mode_menu_convert == "In State":
             mode_menu_reset()
@@ -1142,13 +1803,13 @@ def mode_menu(value):
             ModeMenu_main_convert.grid(column=2, row=4)
             menu_functions = [
                 "Area",
-                "Distance",
-                "Data",
-                "knots",
+                "Volume",
+                "length",
+                "Temperature",
                 "Mass",
                 "Speed",
                 "Time",
-                "Temperature",
+                "more...",
             ]
             col_val = 1
             row_val = 0
@@ -1161,7 +1822,7 @@ def mode_menu(value):
                     width=(WINW / 2),
                     text="  " + str(str(num) + "  " + speedChar),
                     height=(140 / 4),
-                    font=("casio-fx-9860gii", 14),
+                    font=("Calculator", 22, "bold"),
                     justify="left",
                     anchor="w",
                 )
@@ -1184,8 +1845,11 @@ def Calc_input_display(value):
     global PerformSpeed
     global data
     global Time
+    global Area
     global Mass
+    global volume
     global PerformTime
+    global PerformVolume
     global PerformTemperature
     global PerformMass
     global mode_menu_convert
@@ -1193,8 +1857,7 @@ def Calc_input_display(value):
     global ConvertFrom
 
     global new
-
-    print(speed, Temperature)
+    entry.focus_set()
 
     if mode_menu_convert != "In State" and mode_menu_convert == True:
         Convertor(value)
@@ -1224,7 +1887,6 @@ def Calc_input_display(value):
             or value == "Ans"
             or value == "AC"
             or value.isnumeric()
-            and int(value) < 7
         ):
             print(PerformTime)
             if PerformTime == True:
@@ -1276,63 +1938,133 @@ def Calc_input_display(value):
                 print("..........f.....", PerformMass)
                 ConvertTo = value
                 Convertor("5")
+    elif Area:
+        if (
+            value == "="
+            or value == "C"
+            or value == "Ans"
+            or value == "AC"
+            or value.isnumeric()
+        ):
+            print("...............", PerformArea)
+            if PerformArea == True:
+                AreaConvertion(ConvertTo, ConvertFrom, value)
+            elif ConvertTo != 0:
+                print(".......d........", PerformArea)
+                ConvertFrom = value
+                AreaConvertion(ConvertTo, ConvertFrom, value)
+            else:
+                print("..........f.....", PerformArea)
+                ConvertTo = value
+                Convertor("1")
+    elif volume:
+        if (
+            value == "="
+            or value == "C"
+            or value == "Ans"
+            or value == "AC"
+            or value.isnumeric()
+        ):
+            if PerformVolume == True:
+                volumeConvertion(ConvertTo, ConvertFrom, value)
+            elif ConvertTo != 0:
+                print(".......d........", PerformVolume)
+                ConvertFrom = value
+                volumeConvertion(ConvertTo, ConvertFrom, value)
+            else:
+                print("..........f.....", PerformVolume)
+                ConvertTo = value
+                Convertor("2")
+
     elif compute:
         a = str(value)
         if a != "AC" and a != "Ans" and a != "C" and a != "=" and a != "S<=>D":
             if a == "ⁿ":
-                OriginalData += "^("
-                ExpFormation += "^("
-            elif a == "π":
-                OriginalData += "22/7"
-                ExpFormation += a
-            else:
-                OriginalData += a
-                ExpFormation += a
+                a += "^("
+            elif a == "\n":
+                a = ""
+            elif a == "logₓX":
+                a = "log.()()"
         if a == "S<=>D":
-            print(str(Ans))
             if isfloat(Ans):
                 Ans = Fraction(Decimal(str(Ans)))
-                entry.delete(0, "end")
-                entry.insert(0, Ans)
+                entry.delete("0.0", "end")
+                entry.insert("0.0", Ans)
                 OriginalData = str(Ans)
             else:
                 Ans = Fraction(str(Ans))
-                entry.delete(0, "end")
-                entry.insert(0, Ans)
+                entry.delete("0.0", "end")
+                entry.insert("0.0", Ans)
+
         elif a == "AC":
             if ExpFormation != "":
+                # find a way to strip white space
                 his_data.set(ExpFormation + " = " + str(Ans))
-                entry.delete(0, "end")
-                entry.insert(0, "")
+                entry.delete("0.0", "end")
+                entry.insert("0.0", "")
                 OriginalData = ""
                 ExpFormation = ""
         elif a == "C":
-            CurrentVal = entry.index("insert")
-            entry.delete(CurrentVal - 1)
-            OriginalData = entry.get()
-            ExpFormation = entry.get()
+            entry.delete("insert-1c")
+            OriginalData = entry.get("1.0", tk.END)
+            ExpFormation = entry.get("1.0", tk.END)
 
         elif value == "Ans":
-            entry.delete(0, "end")
-            entry.insert(0, Ans)
+            entry.delete("0.0", "end")
+            entry.insert("0.0", Ans)
             OriginalData = str(Ans)
-
         elif value == "=":
             userInput = []
-            userInput.extend(entry.get())
-            print(userInput)
+            userInput.extend(entry.get("1.0", tk.END))
+            ExpFormation = entry.get("1.0", tk.END)
             if conditionChecker(userInput) == True:
                 Ans = bracket_solu(userInput)
-                entry.delete(0, "end")
-                entry.insert(0, Ans)
+                entry.delete("0.0", "end")
+                entry.insert("0.0", Ans)
                 OriginalData = str(Ans)
             else:
                 Ans = "Syntax Error"
-                entry.delete(0, "end")
-                entry.insert(0, Ans)
+                entry.delete("0.0", "end")
+                entry.insert("0.0", Ans)
         else:
-            entry.delete(0, "end")
-            entry.insert(0, OriginalData)
+            print(entry.index("insert"))
+            entry.insert(entry.index("insert"), a)
+
+
+def mode_menu_more():
+    global mode_menu_convert
+
+    mode_menu_convert = "In State"
+    ModeMenu_main_convert.grid_remove()
+    ModeMenu_main_modes.grid(column=2, row=4)
+    modes_functions = [
+        "Differentiation (dx)",
+        "Integration",
+        "Limits (lim)",
+        "Equations (Eq)",
+        "Matrix",
+        "Algebra",
+        "...prev",
+    ]
+    col_val = 1
+    row_val = 0
+    num = 0
+    for modeChar in modes_functions:
+        row_val += 1
+        num += 1
+        label = customtkinter.CTkLabel(
+            master=ModeMenu_main_modes,
+            width=(WINW / 2),
+            text=str(str(num) + " " + modeChar),
+            height=(140 / 4),
+            font=("Calculator", 16, "bold"),
+            justify="left",
+            anchor="w",
+        )
+        label.grid(column=col_val, row=row_val)
+        if row_val == 4:
+            col_val += 1
+            row_val = 0
 
 
 def conditionChecker(userInput):
@@ -1347,9 +2079,12 @@ def conditionChecker(userInput):
 
             if (
                 char != "√"
+                and char != "π"
                 and char in complexArrays
                 and userInput[Index + 3] in basicArrays
-                or char in complexArrays
+                or char != "√"
+                and char != "π"
+                and char in complexArrays
                 and userInput[Index + 3] in complexArrays
             ):
 
@@ -1361,7 +2096,12 @@ def conditionChecker(userInput):
                 print("302")
                 value = False
 
-            if char != "√" and char in complexArrays and userInput[Index + 3] == ")":
+            if (
+                char != "√"
+                and char != "π"
+                and char in complexArrays
+                and userInput[Index + 3] == ")"
+            ):
                 print("306")
                 value = False
 
@@ -1369,10 +2109,12 @@ def conditionChecker(userInput):
             if char in basicArrays or char == "(":
                 print("309")
                 value = False
+    print(value)
     return value
 
 
 def computeResult(userInput):
+
     if isinstance(userInput, list):
         value = userInput[0]
     else:
@@ -1391,7 +2133,6 @@ def computeResult(userInput):
             entry = str(entry)
 
             # solve breakdown complex
-
             if "t" in entry:
                 multiFactor = 1
                 index = userInput.index(entry)
@@ -1471,7 +2212,15 @@ def computeResult(userInput):
 
                 index = userInput.index(entry)
 
-                if len(userInput) != index + 1 and userInput[index + 3] == "×":
+                if len(userInput) != index + 1 and userInput[index + 3] == ".":
+                    baseVal = int(userInput[index + 4])
+                    numVal = int(userInput[index + 5])
+
+                    print(baseVal, numVal)
+                    value = (math.log(baseVal)) * (numVal)
+                    userInput.pop(index + 3)
+
+                elif len(userInput) != index + 1 and userInput[index + 3] == "×":
 
                     value = math.log(float(userInput[index + 2]))
 
@@ -1498,6 +2247,8 @@ def computeResult(userInput):
             charIndex = userInput.index(char)
             if char == "×":
                 evaluateChar += "*"
+            elif char == "π":
+                evaluateChar += "22/7"
             elif char == "÷":
                 evaluateChar += "/"
             elif char == "²":
@@ -1513,7 +2264,7 @@ def computeResult(userInput):
                 and userInput[charIndex + 1] not in basicArrays
                 and isinstance(userInput[charIndex + 1], str) == False
             ):
-                evaluateChar += str(char + "*")
+                evaluateChar += str(char) + "*"
             else:
                 evaluateChar += str(char)
         try:
@@ -1590,485 +2341,6 @@ def bracket_solu(InputData):
 
     print("InputData-we", InputData, new_InputData)
     return computeResult(InputData)
-
-
-def PEMDAS(inputData):
-
-    # checked for paranthesis and
-
-    global Ans
-
-    pre = ""
-
-    preIndex = ""
-    post = ""
-
-    postIndex = ""
-
-    symbolIndex = ""
-
-    negations = False
-
-    value = ""
-
-    newInputData = inputData
-
-    para_thesis_List = []
-
-    if ")" in inputData:
-
-        end = inputData.index(")")
-
-        endrange = inputData.index(")")
-
-        # determin end of bracket
-
-        while end > 0:
-
-            if inputData[end - 1] == "(":
-
-                start = end - 1
-
-                break
-
-            else:
-
-                end = end - 1
-
-        rangeData = endrange - start
-
-        for i in range(rangeData):
-
-            if start + i != start:
-
-                para_thesis_List.append(inputData[start + i])
-
-        print("para before solve", rangeData, para_thesis_List, start)
-
-        Result = solvepara(para_thesis_List)
-
-        print("Result val: ", Result)
-
-        inputData[start] = Result
-
-        print("new ifnor", newInputData)
-
-        newInputData.pop(endrange)
-
-        for i in range(rangeData):
-
-            if start + i != start:
-
-                newInputData.pop((start + 1))
-
-        print(newInputData)
-
-        PEMDAS(newInputData)
-
-    elif "×" in inputData:
-
-        print(newInputData, inputData)
-
-        symbolIndex = inputData.index("×")
-
-        preIndex = symbolIndex - 1
-
-        postIndex = symbolIndex + 1
-
-        if inputData[preIndex - 1] == "-":
-
-            negations = True
-
-            moves = 4
-
-        else:
-
-            negations = False
-
-            moves = 3
-
-        if not negations:
-
-            pre = float(inputData[preIndex])
-
-        else:
-
-            pre = float(inputData[preIndex]) * -1
-
-        post = float(inputData[postIndex])
-
-        value = pre * post
-
-        inputData[preIndex] = value
-
-        newInputData.pop(postIndex)
-
-        newInputData.pop(symbolIndex)
-
-        if negations:
-
-            newInputData.pop((preIndex - 1))
-
-        PEMDAS(newInputData)
-
-    elif "÷" in inputData:
-
-        symbolIndex = inputData.index("÷")
-
-        preIndex = symbolIndex - 1
-
-        postIndex = symbolIndex + 1
-
-        if inputData[preIndex - 1] == "-":
-
-            negations = True
-
-            moves = 4
-
-        else:
-
-            negations = False
-
-            moves = 3
-
-        if not negations:
-
-            pre = float(inputData[preIndex])
-
-        else:
-
-            pre = float(inputData[preIndex]) * -1
-
-        post = float(inputData[postIndex])
-
-        value = pre / post
-
-        inputData[preIndex] = value
-
-        newInputData.pop(postIndex)
-
-        newInputData.pop(symbolIndex)
-
-        if negations:
-
-            newInputData.pop((preIndex - 1))
-
-        PEMDAS(newInputData)
-
-    elif "+" in inputData:
-
-        symbolIndex = inputData.index("+")
-
-        preIndex = symbolIndex - 1
-
-        postIndex = symbolIndex + 1
-
-        if inputData[preIndex - 1] == "-":
-
-            negations = True
-
-            moves = 4
-
-        else:
-
-            negations = False
-
-            moves = 3
-
-        if not negations:
-
-            pre = float(inputData[preIndex])
-
-        else:
-
-            pre = float(inputData[preIndex]) * -1
-
-        print(pre, post, inputData[postIndex])
-
-        post = float(inputData[postIndex])
-
-        value = pre + post
-
-        inputData[preIndex] = value
-
-        newInputData.pop(postIndex)
-
-        newInputData.pop(symbolIndex)
-
-        if negations:
-
-            newInputData.pop((preIndex - 1))
-
-        PEMDAS(newInputData)
-
-    elif "-" in inputData:
-
-        symbolIndex = inputData.index("-")
-
-        preIndex = symbolIndex - 1
-
-        postIndex = symbolIndex + 1
-
-        if inputData[preIndex - 1] == "-":
-
-            negations = True
-
-            moves = 4
-
-        else:
-
-            negations = False
-
-            moves = 3
-
-        if not negations:
-
-            pre = float(inputData[preIndex])
-
-        else:
-
-            pre = float(inputData[preIndex]) * -1
-
-        post = float(inputData[postIndex])
-
-        value = pre - post
-
-        inputData[preIndex] = value
-
-        newInputData.pop(postIndex)
-
-        newInputData.pop(symbolIndex)
-
-        if negations:
-
-            newInputData.pop((preIndex - 1))
-
-        PEMDAS(newInputData)
-
-    Ans = str(newInputData[0])
-
-    entry.delete(0, "end")
-
-    entry.insert(0, Ans)
-
-    return Ans
-
-
-def solvepara(inputData):
-
-    # checked for paranthesis and
-
-    global Ans
-    pre = ""
-
-    preIndex = ""
-    post = ""
-
-    postIndex = ""
-
-    symbolIndex = ""
-
-    negations = False
-
-    value = ""
-
-    newInputData = inputData
-
-    moves = 0
-
-    print("para result entry", newInputData)
-
-    if "×" in inputData:
-
-        symbolIndex = inputData.index("×")
-
-        preIndex = symbolIndex - 1
-
-        postIndex = symbolIndex + 1
-
-        if not negations:
-
-            pre = float(inputData[preIndex])
-
-        else:
-
-            pre = float(inputData[preIndex]) * -1
-
-        post = float(inputData[postIndex])
-
-        value = pre * post
-
-        inputData[preIndex] = value
-
-        newInputData.pop(postIndex)
-
-        newInputData.pop(symbolIndex)
-
-        newInputData = inputData
-
-        if len(newInputData) == 1:
-
-            print("resultgf 423: ", newInputData)
-
-            return newInputData[0]
-
-        else:
-
-            solvepara(newInputData)
-
-    elif "÷" in inputData:
-
-        symbolIndex = inputData.index("÷")
-
-        preIndex = symbolIndex - 1
-
-        postIndex = symbolIndex + 1
-
-        if inputData[preIndex - 1] == "-":
-
-            negations = True
-
-            moves = 4
-
-        else:
-
-            negations = False
-
-            moves = 3
-
-        if not negations:
-
-            pre = float(inputData[preIndex])
-
-        else:
-
-            pre = float(inputData[preIndex]) * -1
-
-        post = float(inputData[postIndex])
-
-        value = pre / post
-
-        inputData[preIndex] = value
-
-        newInputData.pop(postIndex)
-
-        newInputData.pop(symbolIndex)
-
-        newInputData = inputData
-
-        if len(newInputData) == 1:
-
-            print("resultgf 455 : ", newInputData)
-
-            return 8
-
-        else:
-
-            solvepara(newInputData)
-
-    elif "+" in inputData:
-
-        symbolIndex = inputData.index("+")
-
-        preIndex = symbolIndex - 1
-
-        postIndex = symbolIndex + 1
-
-        if inputData[preIndex - 1] == "-":
-
-            negations = True
-
-            moves = 4
-
-        else:
-
-            negations = False
-
-            moves = 3
-
-        if not negations:
-
-            pre = float(inputData[preIndex])
-
-        else:
-
-            pre = float(inputData[preIndex]) * -1
-
-        post = float(inputData[postIndex])
-
-        value = pre + post
-
-        inputData[preIndex] = value
-
-        newInputData.pop(postIndex)
-
-        newInputData.pop(symbolIndex)
-
-        newInputData = inputData
-
-        if len(newInputData) == 1:
-
-            print("resultgf 486: ", newInputData)
-
-            return newInputData[0]
-
-        else:
-
-            solvepara(newInputData)
-
-    elif "-" in inputData:
-
-        symbolIndex = inputData.index("-")
-
-        preIndex = symbolIndex - 1
-
-        postIndex = symbolIndex + 1
-
-        if inputData[preIndex - 1] == "-":
-
-            negations = True
-
-            moves = 4
-
-        else:
-
-            negations = False
-
-            moves = 3
-
-        if not negations:
-
-            pre = float(inputData[preIndex])
-
-        else:
-
-            pre = float(inputData[preIndex]) * -1
-
-        post = float(inputData[postIndex])
-
-        value = pre - post
-
-        inputData[preIndex] = value
-
-        newInputData.pop(postIndex)
-
-        newInputData.pop(symbolIndex)
-
-        newInputData = inputData
-
-        if len(newInputData) == 1:
-
-            print("resultgf 517: ", newInputData)
-
-            return newInputData[0]
-
-        else:
-
-            solvepara(newInputData)
-
-    print("para result", newInputData[0])
-
-    return str(newInputData[0])
 
 
 def isfloat(num):
@@ -2181,42 +2453,6 @@ Xpower_cube = customtkinter.CTkButton(
 )
 Xpower_cube.grid(column=1, row=2, padx=(0, 2), pady=(0, 5))
 
-SquareRoot = customtkinter.CTkButton(
-    master=FunctionFrames_innerFrame,
-    font=("Roboto", 20),
-    width=FunctionFramesBtnWidth,
-    text="√ⁿ",
-    fg_color="#1e1e1f",
-    hover_color="#0773a4",
-    height=35,
-    corner_radius=8,
-    command=lambda: Calc_input_display("√("),
-)
-SquareRoot.grid(column=4, row=3, padx=(0, 2), pady=(0, 5))
-PieButton = customtkinter.CTkButton(
-    master=FunctionFrames_innerFrame,
-    text="π",
-    font=("Roboto", 20),
-    width=FunctionFramesBtnWidth,
-    height=35,
-    fg_color="#1e1e1f",
-    hover_color="#0773a4",
-    corner_radius=8,
-    command=lambda: Calc_input_display("π"),
-)
-PieButton.grid(column=3, row=2, padx=(0, 0), pady=(2, 5))
-
-AbsoluteX = customtkinter.CTkButton(
-    master=FunctionFrames_innerFrame,
-    font=("Roboto", 20),
-    text="|x|",
-    width=FunctionFramesBtnWidth,
-    height=35,
-    fg_color="#1e1e1f",
-    hover_color="#0773a4",
-    command=lambda: Calc_input_display("|x|"),
-)
-AbsoluteX.grid(column=4, row=2, padx=(0, 0), pady=(2, 5))
 
 Xsquare = customtkinter.CTkButton(
     master=FunctionFrames_innerFrame,
@@ -2267,7 +2503,46 @@ cosInverseBtn = customtkinter.CTkButton(
 )
 cosInverseBtn.grid(column=2, row=3, padx=(0, 3), pady=(2, 5))
 
-logInverseBtn = customtkinter.CTkButton(
+
+logBaseNum = customtkinter.CTkButton(
+    master=FunctionFrames_innerFrame,
+    font=("Roboto", 16),
+    text="logₓX",
+    width=FunctionFramesBtnWidth,
+    height=35,
+    fg_color="#1e1e1f",
+    hover_color="#0773a4",
+    command=lambda: Calc_input_display("logₓX"),
+)
+logBaseNum.grid(column=5, row=3, padx=(0, 3), pady=(2, 5))
+
+PieButton = customtkinter.CTkButton(
+    master=FunctionFrames_innerFrame,
+    text="π",
+    font=("Roboto", 20),
+    width=FunctionFramesBtnWidth,
+    height=35,
+    fg_color="#1e1e1f",
+    hover_color="#0773a4",
+    corner_radius=8,
+    command=lambda: Calc_input_display("π"),
+)
+PieButton.grid(column=6, row=3, padx=(0, 3), pady=(2, 5))
+
+Square_root = customtkinter.CTkButton(
+    master=FunctionFrames_innerFrame,
+    font=("Roboto", 20),
+    width=FunctionFramesBtnWidth,
+    text="√ⁿ",
+    fg_color="#1e1e1f",
+    hover_color="#0773a4",
+    height=35,
+    corner_radius=8,
+    command=lambda: Calc_input_display("√("),
+)
+Square_root.grid(column=2, row=4, padx=(0, 3), pady=(2, 5))
+
+logInverse = customtkinter.CTkButton(
     master=FunctionFrames_innerFrame,
     font=("Roboto", 16),
     text="log⁻¹",
@@ -2277,79 +2552,9 @@ logInverseBtn = customtkinter.CTkButton(
     hover_color="#0773a4",
     command=lambda: Calc_input_display("log⁻¹"),
 )
-logInverseBtn.grid(column=3, row=3, padx=(0, 3), pady=(2, 5))
+logInverse.grid(column=1, row=4, padx=(0, 3), pady=(2, 5))
 
-SeHr = customtkinter.CTkButton(
-    master=FunctionFrames_innerFrame,
-    font=("Roboto", 16),
-    text="Time",
-    width=FunctionFramesBtnWidth,
-    height=35,
-    fg_color="#1e1e1f",
-    hover_color="#0773a4",
-    command=lambda: Calc_input_display("Time"),
-)
-SeHr.grid(column=5, row=3, padx=(0, 3), pady=(2, 5))
-
-KilobyteMega = customtkinter.CTkButton(
-    master=FunctionFrames_innerFrame,
-    font=("Roboto", 16),
-    text="Data",
-    width=FunctionFramesBtnWidth,
-    height=35,
-    fg_color="#1e1e1f",
-    hover_color="#0773a4",
-    command=lambda: Calc_input_display("Data"),
-)
-KilobyteMega.grid(column=5, row=3, padx=(0, 3), pady=(2, 5))
-
-Temp = customtkinter.CTkButton(
-    master=FunctionFrames_innerFrame,
-    font=("Roboto", 13),
-    text="Tmp",
-    width=FunctionFramesBtnWidth,
-    height=35,
-    fg_color="#1e1e1f",
-    hover_color="#0773a4",
-    command=lambda: Calc_input_display("Tmp"),
-)
-Temp.grid(column=6, row=3, padx=(0, 3), pady=(2, 5))
-
-Volume = customtkinter.CTkButton(
-    master=FunctionFrames_innerFrame,
-    font=("Roboto", 17),
-    text="ENG",
-    width=FunctionFramesBtnWidth,
-    height=35,
-    fg_color="#1e1e1f",
-    hover_color="#0773a4",
-    command=lambda: Calc_input_display("ENG"),
-)
-Volume.grid(column=2, row=4, padx=(0, 3), pady=(2, 5))
-
-eConvert = customtkinter.CTkButton(
-    master=FunctionFrames_innerFrame,
-    font=("Roboto", 20),
-    text="hyp",
-    width=FunctionFramesBtnWidth,
-    height=35,
-    fg_color="#1e1e1f",
-    hover_color="#0773a4",
-    command=lambda: Calc_input_display("hyp"),
-)
-eConvert.grid(column=1, row=4, padx=(0, 3), pady=(2, 5))
-
-MAc = customtkinter.CTkButton(
-    master=FunctionFrames_innerFrame,
-    font=("Roboto", 20),
-    text="Area",
-    width=FunctionFramesBtnWidth,
-    height=35,
-    fg_color="#1e1e1f",
-    hover_color="#0773a4",
-    command=lambda: Calc_input_display("Area"),
-)
-MAc.grid(column=4, row=4, padx=(0, 3), pady=(2, 5))
+# MAc.grid(column=4, row=4, padx=(0, 3), pady=(2, 5))
 
 fractionConvert = customtkinter.CTkButton(
     master=FunctionFrames_innerFrame,
