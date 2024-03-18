@@ -36,7 +36,5 @@ A Python-based multi-functional calculator with scientific, conversion, and basi
 - Create a new branch for your changes.
 - Make your code changes and commit them with clear messages.
 
-**Aditional note**
-- program is under production hence algebra,matrix and calculus functions are not available at the moment
 
 
