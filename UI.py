@@ -1,11 +1,13 @@
 import customtkinter
-
 import tkinter as tk
-
 import math
 from fractions import Fraction
 from decimal import Decimal
 from ctypes import windll, byref, create_unicode_buffer, create_string_buffer
+from sympy import Symbol, solve
+from sympy import Matrix as Mx
+import ast
+
 
 FR_PRIVATE = 0x10
 FR_NOT_ENUM = 0x20
@@ -25,28 +27,52 @@ FramesBtnWidth = (WINW / 5) - 3
 frame = customtkinter.CTkFrame(master=root)
 frame.grid(column=5, row=4)
 
+x = Symbol("x")
 OriginalData = ""
 numericObg = ""
 basicArrays = ["+", "-", "÷", "×"]
 complexArrays = ["R", "D", "t", "c", "S", "l", "π", "√", "%", "x²"]
+subscriptValues = [
+    "\u2080",
+    "\u2081",
+    "\u2082",
+    "\u2083",
+    "\u2084",
+    "\u2085",
+    "\u2086",
+    "\u2087",
+    "\u2088",
+    "\u2089",
+]
+subscript_move = False
 userInput = []
 new = []
 ExpFormation = ""
-Ans = ""
+Ans = " "
 data = ""
 # modes
 PerformSpeed = False
+PerformEquation = False
+PerformMatrix = False
 PerformTime = False
 PerformTemperature = False
 PerformMass = False
 PerformVolume = False
 PerformArea = False
+PerformLength = False
 mode_menu_convert = False
+resetFrames = 0
 
 SpeedAns = ""
 SpeedData = ""
+Equation = False
+AMatrix = False
+BMatrix = False
+Matrix = False
+Expression = False
 compute = True
 volume = False
+Length = False
 speed = False
 Area = False
 Time = False
@@ -54,6 +80,8 @@ Temperature = False
 Mass = False
 ConvertTo = 0
 ConvertFrom = 0
+mode_more = 0
+direction = False
 
 his_data = customtkinter.StringVar()
 MenuFrame = customtkinter.CTkFrame(
@@ -77,6 +105,13 @@ ModeMenu_main_convert_Time = customtkinter.CTkFrame(
     fg_color="#2c2c2c",
     corner_radius=0,
 )
+ModeMenu_main_convert_Length = customtkinter.CTkFrame(
+    master=MenuFrame,
+    width=WINW,
+    height=140,
+    fg_color="#2c2c2c",
+    corner_radius=0,
+)
 ModeMenu_main_convert_Temperature = customtkinter.CTkFrame(
     master=MenuFrame,
     width=WINW,
@@ -91,6 +126,21 @@ ModeMenu_main_convert_Mass = customtkinter.CTkFrame(
     fg_color="#2c2c2c",
     corner_radius=0,
 )
+ModeMenu_main_convert_equation = customtkinter.CTkFrame(
+    master=MenuFrame,
+    width=WINW,
+    height=140,
+    fg_color="#2c2c2c",
+    corner_radius=0,
+)
+ModeMenu_main_convert_matrix = customtkinter.CTkFrame(
+    master=MenuFrame,
+    width=WINW,
+    height=140,
+    fg_color="#2c2c2c",
+    corner_radius=0,
+)
+
 MenuFrame.grid(column=1, row=2)
 entry = customtkinter.CTkTextbox(
     master=MenuFrame,
@@ -135,6 +185,21 @@ ModeMenu_main_convert_select_speed = customtkinter.CTkFrame(
     fg_color="#2c2c2c",
     corner_radius=0,
 )
+ModeMenu_main_convert_select_Length = customtkinter.CTkFrame(
+    master=MenuFrame,
+    width=WINW,
+    height=140,
+    fg_color="#2c2c2c",
+    corner_radius=0,
+)
+ModeMenu_main_convert_select_matrix = customtkinter.CTkFrame(
+    master=MenuFrame,
+    width=WINW,
+    height=140,
+    fg_color="#2c2c2c",
+    corner_radius=0,
+)
+
 ModeMenu_main_modes = customtkinter.CTkFrame(
     master=MenuFrame,
     width=WINW,
@@ -149,6 +214,15 @@ ModeMenu_main_convert_select_Time = customtkinter.CTkFrame(
     fg_color="#2c2c2c",
     corner_radius=0,
 )
+
+ModeMenu_main_convert_select_equation = customtkinter.CTkFrame(
+    master=MenuFrame,
+    width=WINW,
+    height=140,
+    fg_color="#2c2c2c",
+    corner_radius=0,
+)
+
 ModeMenu_main_convert_select_Temperature = customtkinter.CTkFrame(
     master=MenuFrame,
     width=WINW,
@@ -178,7 +252,7 @@ ModeMenu_main_convert_select_Mass = customtkinter.CTkFrame(
     corner_radius=0,
 )
 
-entry_Time = customtkinter.CTkEntry(
+entry_Time = customtkinter.CTkTextbox(
     master=ModeMenu_main_convert_select_Time,
     width=WINW,
     height=100,
@@ -187,7 +261,33 @@ entry_Time = customtkinter.CTkEntry(
     corner_radius=0,
 )
 
-entry_speed = customtkinter.CTkEntry(
+entry_equation = customtkinter.CTkTextbox(
+    master=ModeMenu_main_convert_select_equation,
+    width=WINW,
+    height=100,
+    font=("Roboto", 24),
+    fg_color="#2c2c2c",
+    corner_radius=0,
+)
+entry_matrix = customtkinter.CTkTextbox(
+    master=ModeMenu_main_convert_select_matrix,
+    width=WINW,
+    height=100,
+    font=("Roboto", 24),
+    fg_color="#2c2c2c",
+    corner_radius=0,
+)
+
+
+entry_Length = customtkinter.CTkTextbox(
+    master=ModeMenu_main_convert_select_Length,
+    width=WINW,
+    height=100,
+    font=("Roboto", 24),
+    fg_color="#2c2c2c",
+    corner_radius=0,
+)
+entry_speed = customtkinter.CTkTextbox(
     master=ModeMenu_main_convert_select_speed,
     width=WINW,
     height=100,
@@ -195,7 +295,7 @@ entry_speed = customtkinter.CTkEntry(
     fg_color="red",
     corner_radius=0,
 )
-entry_volume = customtkinter.CTkEntry(
+entry_volume = customtkinter.CTkTextbox(
     master=ModeMenu_main_convert_select_volume,
     width=WINW,
     height=100,
@@ -203,7 +303,7 @@ entry_volume = customtkinter.CTkEntry(
     fg_color="red",
     corner_radius=0,
 )
-entry_Temperature = customtkinter.CTkEntry(
+entry_Temperature = customtkinter.CTkTextbox(
     master=ModeMenu_main_convert_select_Temperature,
     width=WINW,
     height=100,
@@ -211,7 +311,7 @@ entry_Temperature = customtkinter.CTkEntry(
     fg_color="blue",
     corner_radius=0,
 )
-entry_Mass = customtkinter.CTkEntry(
+entry_Mass = customtkinter.CTkTextbox(
     master=ModeMenu_main_convert_select_Mass,
     width=WINW,
     height=100,
@@ -219,7 +319,7 @@ entry_Mass = customtkinter.CTkEntry(
     fg_color="#2c2c2c",
     corner_radius=0,
 )
-entry_Area = customtkinter.CTkEntry(
+entry_Area = customtkinter.CTkTextbox(
     master=ModeMenu_main_convert_select_Area,
     width=WINW,
     height=100,
@@ -346,10 +446,13 @@ buttonright = customtkinter.CTkButton(
     command=lambda: CursorPosition("r"),
 )
 buttonright.grid(row=2, column=3, padx=(0, 3), pady=(0, 5))
+ActiveEntry = entry
 
 
 def CursorPosition(dr):
-    cursor = entry.index("insert")
+    global ActiveEntry
+    ActiveEntry.focus_set()
+    cursor = ActiveEntry.index("insert")
     splitData = cursor.split(".")
     Vertical = splitData[0]
     horizontal = splitData[1]
@@ -359,8 +462,15 @@ def CursorPosition(dr):
     if dr == "r":
         if int(horizontal) >= 0:
             horizontal = int(horizontal) + 1
+    if dr == "d":
+        if int(Vertical) >= 0:
+            Vertical = int(Vertical) + 1
+    if dr == "u":
+        if int(Vertical) >= 0:
+            Vertical = int(Vertical) - 1
     newCursor = str(Vertical) + "." + str(horizontal)
-    entry.mark_set("insert", newCursor)
+    print(newCursor)
+    ActiveEntry.mark_set("insert", newCursor)
 
 
 def Convertion_speed(a, b, val):
@@ -858,8 +968,83 @@ def Convertion_Area(a, b, val):
     return Ans
 
 
-def Convertion_volume(a, b, val):
+def Convertion_equation(a, val):
+    try:
+        x = Symbol("x")
+        X_index = val.index("x")
+        if "x" in val and X_index != 0 and val[X_index - 1].isnumeric():
+            newVal = ""
+            for char in val:
+                if val.index(char) == X_index - 1:
+                    newVal += char + "*"
+                else:
+                    newVal += char
+        print("newVal", newVal)
 
+        solutions = "2"
+        matrix = newVal.replace("×", "*")
+        matrix = matrix.replace("÷", "/")
+
+        solutions = solve(matrix, x)
+
+        Answer = ""
+
+        print("solution", solutions)
+        for sl in solutions:
+            Answer += "x = " + str(sl) + ". "
+
+        Answer = Answer.replace("sqrt", "√")
+        Answer = Answer.replace("*", "×")
+        Answer = Answer.replace("××", "^")
+
+        print("answer", Answer)
+        return str(Answer)
+    except Exception as e:
+        return "Cannot solve expression"
+
+
+def Convertion_matrix(a, val):
+    global Expression
+    global AMatrix
+    global BMatrix
+
+    try:
+        if Expression == True:
+            AnsExp = val
+            Step1, Split2 = AnsExp.split("A->List")
+            value = Step1.split("×")
+            Original = int(eval(str(value[0])))
+
+            Step2, Step3 = Split2.split("×")
+            Step2 = Step2.strip()
+            symbol = Step2[0]
+            value_1 = Step2.split(Step2[0])[1]
+            Expression = 0
+            Original2 = int(eval(value_1))
+            AMatrix = "[" + AMatrix + "]".strip()
+            AMatrix = ast.literal_eval(AMatrix)
+            BMatrix = "[" + BMatrix + "]".strip()
+            BMatrix = ast.literal_eval(BMatrix)
+
+            if symbol == "+":
+                Expression = Original * Mx(AMatrix) + Original2 * Mx(BMatrix)
+            elif symbol == "-":
+                Expression = Original * Mx(AMatrix) - Original2 * Mx(BMatrix)
+
+            return Expression
+        else:
+            valuesSplit = val.split("\n")
+            AMatrix = valuesSplit[0].split("=")[1]
+            BMatrix = valuesSplit[1].split("=")[1]
+            entry_matrix.delete("0.0", "end")
+            entry_matrix.insert("0.0", "1 × A->List + 1 × B->List")
+            return "exp"
+
+    except Exception as e:
+        return "Invalid Syntax"
+
+
+def Convertion_volume(a, b, val):
     Ans = val
     val = int(val)
     # t
@@ -1006,12 +1191,234 @@ def Convertion_volume(a, b, val):
     return Ans
 
 
+def Convertion_Length(a, b, val):
+
+    Ans = val
+    val = int(val)
+    # mm
+    if a == 0 and b == 0:  # mm
+        Ans = val
+    elif a == 0 and b == 1:  # mm
+        Ans = val * 0.1
+    elif a == 0 and b == 2:  # mm
+        Ans = val * 0.001
+    elif a == 0 and b == 3:  # mm
+        Ans = val * 0.000001
+    elif a == 0 and b == 4:  # mm
+        Ans = val * 0.0393700787
+    elif a == 0 and b == 5:  # mm
+        Ans = val * 0.0032808399
+    elif a == 0 and b == 6:  # mm
+        Ans = val * 0.0010936133
+    elif a == 0 and b == 7:  # mm
+        Ans = val * 0
+    elif a == 0 and b == 8:  # mm
+        Ans = val * 0
+    elif a == 0 and b == 9:  # mm
+        Ans = val * 39.3700787402
+
+    # cm
+    if a == 1 and b == 0:  # cm
+        Ans = val * 10
+    elif a == 1 and b == 1:  # cm
+        Ans = val
+    elif a == 1 and b == 2:  # cm
+        Ans = val * 0.01
+    elif a == 1 and b == 3:  # cm
+        Ans = val * 0.00001
+    elif a == 1 and b == 4:  # cm
+        Ans = val * 0.3937007874
+    elif a == 1 and b == 5:  # cm
+        Ans = val * 0.032808399
+    elif a == 1 and b == 6:  # cm
+        Ans = val * 0.010936133
+    elif a == 1 and b == 7:  # cm
+        Ans = val * 0.0000062137
+    elif a == 1 and b == 8:  # cm
+        Ans = val * 0.0000053996
+    elif a == 1 and b == 9:  # cm
+        Ans = val * 393.7007874016
+    # m
+    elif a == 2 and b == 0:  # m
+        Ans = val * 1000
+    elif a == 2 and b == 1:  # m
+        Ans = val * 100
+    elif a == 2 and b == 2:  # m
+        Ans = val
+    elif a == 2 and b == 3:  # m
+        Ans = val * 0.001
+    elif a == 2 and b == 4:  # m
+        Ans = val * 39.3700787402
+    elif a == 2 and b == 5:  # m
+        Ans = val * 3.280839895
+    elif a == 2 and b == 6:  # m
+        Ans = val * 1.0936132983
+    elif a == 2 and b == 7:  # m
+        Ans = val * 0.0006213712
+    elif a == 2 and b == 8:  # m
+        Ans = val * 0.0005399568
+    elif a == 2 and b == 9:  # m
+        Ans = val * 39370.078740157
+    # km
+    if a == 3 and b == 0:  # km
+        Ans = val * 1000000
+    elif a == 3 and b == 1:  # km
+        Ans = val * 100000
+    elif a == 3 and b == 2:  # km
+        Ans = val * 1000
+    elif a == 3 and b == 3:  # km
+        Ans = val
+    elif a == 3 and b == 4:  # km
+        Ans = val * 39370.078740157
+    elif a == 3 and b == 5:  # km
+        Ans = val * 3280.8398950131
+    elif a == 3 and b == 6:  # km
+        Ans = val * 1093.6132983377
+    elif a == 2 and b == 7:  # km
+        Ans = val * 0.6213711922
+    elif a == 2 and b == 8:  # km
+        Ans = val * 0.5399568035
+    elif a == 2 and b == 9:  # km
+        Ans = val * 39370078.740157
+
+        # in
+    elif a == 4 and b == 0:  # in
+        Ans = val * 25.4
+    elif a == 4 and b == 1:  # in
+        Ans = val * 2.54
+    elif a == 4 and b == 2:  # in
+        Ans = val * 0.0254
+    elif a == 4 and b == 3:  # in
+        Ans = val * 0.0000254
+    elif a == 4 and b == 4:  # in
+        Ans = val
+    elif a == 4 and b == 5:  # in
+        Ans = val * 0.0833333333
+    elif a == 4 and b == 6:  # in
+        Ans = val * 0.0277777778
+    elif a == 4 and b == 7:  # in
+        Ans = val * 0.0000157828
+    elif a == 4 and b == 8:  # in
+        Ans = val * 0.0000137149
+    elif a == 4 and b == 9:  # in
+        Ans = val * 1000
+
+        # ft
+    elif a == 5 and b == 0:  # ft
+        Ans = val * 304.8
+    elif a == 5 and b == 1:  # ft
+        Ans = val * 30.48
+    elif a == 5 and b == 2:  # ft
+        Ans = val * 0.3048
+    elif a == 5 and b == 3:  # ft
+        Ans = val * 0.0003048
+    elif a == 5 and b == 4:  # ft
+        Ans = val * 12
+    elif a == 5 and b == 5:  # ft
+        Ans = val
+    elif a == 5 and b == 6:  # ft
+        Ans = val * 0.3333333333
+    elif a == 5 and b == 7:  # ft
+        Ans = val * 0.0001893939
+    elif a == 5 and b == 8:  # ft
+        Ans = val * 0.0001645788
+    elif a == 5 and b == 9:  # ft
+        Ans = val * 12000
+        # yd
+    elif a == 6 and b == 0:  # yd
+        Ans = val * 914.4
+    elif a == 6 and b == 1:  # yd
+        Ans = val * 91.44
+    elif a == 6 and b == 2:  # yd
+        Ans = val * 0.9144
+    elif a == 6 and b == 3:  # yd
+        Ans = val * 0.0009144
+    elif a == 6 and b == 4:  # yd
+        Ans = val * 36
+    elif a == 6 and b == 5:  # yd
+        Ans = val * 3
+    elif a == 6 and b == 6:  # yd
+        Ans = val
+    elif a == 6 and b == 7:  # yd
+        Ans = val * 0.0005681818
+    elif a == 6 and b == 8:  # yd
+        Ans = val * 0.0004937365
+    elif a == 6 and b == 9:  # yd
+        Ans = val * 36000
+
+    elif a == 7 and b == 0:  # mi
+        Ans = val * 1609344
+    elif a == 7 and b == 1:  # mi
+        Ans = val * 160934.4
+    elif a == 7 and b == 2:  # mi
+        Ans = val * 1609.344
+    elif a == 7 and b == 3:  # mi
+        Ans = val * 1.609344
+    elif a == 7 and b == 4:  # mi
+        Ans = val * 63360
+    elif a == 7 and b == 5:  # mi
+        Ans = val * 5280
+    elif a == 7 and b == 6:  # mi
+        Ans = val * 1760
+    elif a == 7 and b == 7:  # mi
+        Ans = val
+    elif a == 7 and b == 8:  # mi
+        Ans = val * 0.8689762419
+    elif a == 7 and b == 9:  # mi
+        Ans = val * 63360000
+
+    elif a == 8 and b == 0:  # NM
+        Ans = val * 1852000
+    elif a == 8 and b == 1:  # NM
+        Ans = val * 185200
+    elif a == 8 and b == 2:  # NM
+        Ans = val * 1852
+    elif a == 8 and b == 3:  # NM
+        Ans = val * 1.852
+    elif a == 8 and b == 4:  # NM
+        Ans = val * 72913.385826772
+    elif a == 8 and b == 5:  # NM
+        Ans = val * 6076.1154855643
+    elif a == 8 and b == 6:  # NM
+        Ans = val * 2025.3718285214
+    elif a == 8 and b == 7:  # NM
+        Ans = val * 1.150779448
+    elif a == 8 and b == 8:  # NM
+        Ans = val
+    elif a == 8 and b == 9:  # NM
+        Ans = val * 72, 913385.826772
+
+    elif a == 9 and b == 0:  # NM
+        Ans = val * 0.0254
+    elif a == 9 and b == 1:  # NM
+        Ans = val * 0.00254
+    elif a == 9 and b == 2:  # NM
+        Ans = val * 0.0000254
+    elif a == 9 and b == 3:  # NM
+        Ans = val * 0
+    elif a == 9 and b == 4:  # NM
+        Ans = val * 0.001
+    elif a == 9 and b == 5:  # NM
+        Ans = val * 0.0000833333
+    elif a == 9 and b == 6:  # NM
+        Ans = val * 0.0000277778
+    elif a == 9 and b == 7:  # NM
+        Ans = val * 0
+    elif a == 9 and b == 8:  # NM
+        Ans = val * 0
+    elif a == 9 and b == 9:  # NM
+        Ans = val
+    return Ans
+
+
 def SpeedConvertion(a, b, val):
     global ModeMenu_main_convert_select
     global ModeMenu_main_convert
     global PerformSpeed
     global SpeedData
     global SpeedAns
+    global ActiveEntry
+    global resetFrames
 
     print(a, b, "speed")
     a = int(a) - 1
@@ -1041,6 +1448,8 @@ def SpeedConvertion(a, b, val):
         )
         label_speed.grid(column=1, row=1)
         entry_speed.grid(column=1, row=2)
+        ActiveEntry = entry_speed
+        resetFrames = 1
 
     else:
         a_str = str(val)
@@ -1048,31 +1457,163 @@ def SpeedConvertion(a, b, val):
 
         if a_str == "AC":
             his_data.set(SpeedData + " " + str(SpeedAns))
-            entry_speed.delete(0, "end")
-            entry_speed.insert(0, "")
+            entry.delete("0.0", "end")
+            entry_speed.insert("0.0", "")
             SpeedData = ""
         elif a_str == "C":
-            CurrentVal = entry_speed.index("insert")
-            entry_speed.delete(CurrentVal - 1)
-            SpeedData = entry_speed.get()
+            entry_speed.delete("insert-1c")
+            SpeedData = entry_speed.get("0.0", tk.END)
 
         elif val == "Ans":
-            entry_speed.delete(0, "end")
-            entry_speed.insert(0, SpeedAns)
+            entry.delete("0.0", "end")
+            entry_speed.insert("0.0", SpeedAns)
 
         elif val == "=":
-            print(entry_speed.get(), SpeedData)
-            if entry_speed.get().isnumeric():
-                SpeedAns = Convertion_speed(a, b, entry_speed.get())
-                entry_speed.delete(0, "end")
-                entry_speed.insert(0, str(SpeedAns) + " " + Speed_functions[b])
+            print(
+                entry_speed.get("0.0", tk.END),
+                entry_speed.get("0.0", tk.END).isnumeric(),
+            )
+            if int(entry_speed.get("0.0", tk.END)):
+                SpeedAns = Convertion_speed(a, b, entry_speed.get("0.0", tk.END))
+                entry_speed.delete("0.0", "end")
+                entry_speed.insert("0.0", str(SpeedAns) + " " + Speed_functions[b])
             else:
                 SpeedAns = "Syntax Error"
-                entry_speed.delete(0, "end")
-                entry_speed.insert(0, SpeedAns)
+                entry_speed.delete("0.0", "end")
+                entry_speed.insert("0.0", SpeedAns)
         else:
-            entry_speed.delete(0, "end")
-            entry_speed.insert(0, SpeedData)
+
+            entry_speed.insert(entry_speed.index("insert"), val)
+
+
+def EquationConvertion(a, val):
+    global ModeMenu_main_convert_select
+    global ModeMenu_main_convert
+    global PerformEquation
+    global SpeedData
+    global SpeedAns
+    global ActiveEntry
+    global resetFrames
+
+    if not PerformEquation and isfloat(a) and int(a) > 0 and int(a) < 5:
+        equation_functions = [
+            1 * x + 10,
+            1 * x**2 + 1 * x + 10,
+            1 * x**3 + 1 * x**2 + 1 * x + 10,
+            1 * x**4 + 1 * x**3 + 1 * x**2 + 1 * x + 10,
+        ]
+        PerformEquation = True
+        ModeMenu_main_convert.grid_remove()
+        ModeMenu_main_convert_equation.grid_remove()
+        ModeMenu_main_convert_select_equation.grid(column=1, row=2)
+        label_equation = customtkinter.CTkLabel(
+            master=ModeMenu_main_convert_select_equation,
+            width=(WINW),
+            text=str("Performing equation expression"),
+            height=(40),
+            font=("Roboto", 12),
+            corner_radius=0,
+        )
+        label_equation.grid(column=1, row=1)
+        entry_equation.grid(column=1, row=2)
+        entry_equation.delete("0.0", "end")
+        entry_equation.insert("0.0", equation_functions[int(a) - 1])
+        ActiveEntry = entry_equation
+        resetFrames = 1
+    else:
+        a_str = str(val)
+        SpeedData += a_str
+
+        if a_str == "AC":
+            his_data.set(SpeedData + " " + str(SpeedAns))
+            entry_equation.delete("0.0", "end")
+            entry_equation.insert("0.0", "")
+            SpeedData = ""
+        elif a_str == "C":
+            entry_equation.delete("insert-1c")
+            SpeedData = entry_equation.get("1.0", tk.END)
+        elif val == "Ans":
+            entry_equation.delete("0.0", "end")
+            entry_equation.insert("0.0", SpeedAns)
+
+        elif val == "=":
+            SpeedAns = Convertion_equation(a, entry_equation.get("1.0", tk.END))
+            entry_equation.delete("0.0", "end")
+            entry_equation.insert("0.0", SpeedAns)
+        else:
+            entry_equation.insert(entry_equation.index("insert"), val)
+
+
+def MatrixConvertion(a, val):
+    global ModeMenu_main_convert_select
+    global ModeMenu_main_convert
+    global PerformMatrix
+    global Expression
+    global SpeedData
+    global SpeedAns
+    global ActiveEntry
+    global resetFrames
+
+    if not PerformMatrix and isfloat(a) and int(a) > 0 and int(a) < 5:
+        matrix_functions = [
+            "[0,0],[0,0]",
+            "[0,0],[0,0],[0,0]",
+            "[0,0,0],[0,0,0]",
+            "[0,0,0],[0,0,0],[0,0,0]",
+        ]
+        PerformMatrix = True
+        ModeMenu_main_convert.grid_remove()
+        ModeMenu_main_convert_matrix.grid_remove()
+        ModeMenu_main_convert_select_matrix.grid(column=1, row=2)
+        label_matrix = customtkinter.CTkLabel(
+            master=ModeMenu_main_convert_select_matrix,
+            width=(WINW),
+            text=str("Performing matrix expression"),
+            height=(40),
+            font=("Roboto", 12),
+            corner_radius=0,
+        )
+        label_matrix.grid(column=1, row=1)
+        entry_matrix.grid(column=1, row=2)
+        entry_matrix.delete("0.0", "end")
+        entry_matrix.insert(
+            "0.0",
+            "A->List = "
+            + matrix_functions[int(a) - 1]
+            + "\n"
+            + "B->List = "
+            + matrix_functions[int(a) - 1],
+        )
+        ActiveEntry = entry_matrix
+        resetFrames = 1
+    else:
+        a_str = str(val)
+        SpeedData += a_str
+
+        if a_str == "AC":
+            his_data.set(SpeedData + " " + str(SpeedAns))
+            entry_matrix.delete("0.0", "end")
+            entry_matrix.insert("0.0", "")
+            SpeedData = ""
+        elif a_str == "C":
+            item = entry_matrix.get("insert-1c")
+            print(item, item.isnumeric())
+            if item.isnumeric() and item != ".":
+                entry_matrix.delete("insert-1c")
+        elif val == "Ans":
+            entry_matrix.delete("0.0", "end")
+            entry_matrix.insert("0.0", SpeedAns)
+
+        elif val == "=":
+            if Expression == True:
+                SpeedAns = Convertion_matrix(a, entry_matrix.get("1.0", tk.END))
+                entry_matrix.delete("0.0", "end")
+                entry_matrix.insert("0.0", SpeedAns)
+            else:
+                SpeedAns = Convertion_matrix(a, entry_matrix.get("1.0", tk.END))
+                Expression = True
+        else:
+            entry_matrix.insert(entry_matrix.index("insert"), val)
 
 
 def TemperatureConvertion(a, b, val):
@@ -1081,6 +1622,8 @@ def TemperatureConvertion(a, b, val):
     global PerformTemperature
     global SpeedData
     global SpeedAns
+    global ActiveEntry
+    global resetFrames
 
     a = int(a) - 1
     b = int(b) - 1
@@ -1089,6 +1632,7 @@ def TemperatureConvertion(a, b, val):
         "(⁰F)",
         "(K)",
     ]
+    print("forces...")
     if not PerformTemperature:
         PerformTemperature = True
         ModeMenu_main_convert.grid_remove()
@@ -1109,6 +1653,8 @@ def TemperatureConvertion(a, b, val):
         )
         label_Temperature.grid(column=1, row=1)
         entry_Temperature.grid(column=1, row=2)
+        ActiveEntry = entry_Temperature
+        resetFrames = 1
 
     else:
 
@@ -1117,40 +1663,40 @@ def TemperatureConvertion(a, b, val):
 
         if a_str == "AC":
             his_data.set(SpeedData + " " + str(SpeedAns))
-            entry_Temperature.delete(0, "end")
-            entry_Temperature.insert(0, "")
+            entry_Temperature.delete("0.0", "end")
+            entry_Temperature.insert("0.0", "")
             SpeedData = ""
         elif a_str == "C":
-            CurrentVal = entry_Temperature.index("insert")
-            entry_Temperature.delete(CurrentVal - 1)
-            SpeedData = entry_Temperature.get()
+            entry_Temperature.delete("insert-1c")
+            SpeedData = entry_Temperature.get("0.0", tk.END)
 
         elif val == "Ans":
-            entry_Temperature.delete(0, "end")
-            entry_Temperature.insert(0, SpeedAns)
+            entry_Temperature.delete("0.0", "end")
+            entry_Temperature.insert("0.0", SpeedAns)
 
         elif val == "=":
-            print(entry_Temperature.get(), SpeedData)
-            if entry_Temperature.get().isnumeric():
-                SpeedAns = Convertion_Temperature(a, b, entry_Temperature.get())
+            if int(entry_Temperature.get("0.0", tk.END)):
+                SpeedAns = Convertion_Temperature(
+                    a, b, entry_Temperature.get("0.0", tk.END)
+                )
                 print(
                     a,
                     b,
-                    entry_Temperature.get(),
-                    Convertion_Temperature(a, b, entry_Temperature.get()),
+                    entry_Temperature.get("0.0", tk.END),
+                    Convertion_Temperature(a, b, entry_Temperature.get("0.0", tk.END)),
                     "....",
                 )
-                entry_Temperature.delete(0, "end")
+                entry_Temperature.delete("0.0", "end")
                 entry_Temperature.insert(
-                    0, str(SpeedAns) + " " + Temperature_functions[b]
+                    "0.0", str(SpeedAns) + " " + Temperature_functions[b]
                 )
             else:
                 SpeedAns = "Syntax Error"
-                entry_Temperature.delete(0, "end")
-                entry_Temperature.insert(0, SpeedAns)
+                entry_Temperature.delete("0.0", "end")
+                entry_Temperature.insert("0.0", SpeedAns)
         else:
-            entry_Temperature.delete(0, "end")
-            entry_Temperature.insert(0, SpeedData)
+
+            entry_Temperature.insert(entry_Temperature.index("insert"), val)
 
 
 def AreaConvertion(a, b, val):
@@ -1159,6 +1705,8 @@ def AreaConvertion(a, b, val):
     global PerformArea
     global SpeedData
     global SpeedAns
+    global ActiveEntry
+    global resetFrames
 
     a = int(a) - 1
     b = int(b) - 1
@@ -1186,6 +1734,8 @@ def AreaConvertion(a, b, val):
         )
         label_Area.grid(column=1, row=1)
         entry_Area.grid(column=1, row=2)
+        ActiveEntry = entry_Area
+        resetFrames = 1
 
     else:
 
@@ -1194,38 +1744,35 @@ def AreaConvertion(a, b, val):
 
         if a_str == "AC":
             his_data.set(SpeedData + " " + str(SpeedAns))
-            entry_Area.delete(0, "end")
-            entry_Area.insert(0, "")
+            entry_Area.delete("0.0", "end")
+            entry_Area.insert("0.0", "")
             SpeedData = ""
         elif a_str == "C":
-            CurrentVal = entry_Area.index("insert")
-            entry_Area.delete(CurrentVal - 1)
-            SpeedData = entry_Area.get()
+            entry_Area.delete("insert-1c")
+            SpeedData = entry_Area.get("0.0", tk.END)
 
-        elif val == "Ans":
-            entry_Area.delete(0, "end")
-            entry_Area.insert(0, SpeedAns)
+        elif a_str == "Ans":
+            entry_Area.delete("0.0", "end")
+            entry_Area.insert("0.0", SpeedAns)
 
-        elif val == "=":
-            print(entry_Area.get(), SpeedData)
-            if entry_Area.get().isnumeric():
-                SpeedAns = Convertion_Area(a, b, entry_Area.get())
+        elif a_str == "=":
+            if int(entry_Area.get("0.0", tk.END)):
+                SpeedAns = Convertion_Area(a, b, entry_Area.get("0.0", tk.END))
                 print(
                     a,
                     b,
-                    entry_Area.get(),
-                    Convertion_Area(a, b, entry_Area.get()),
+                    entry_Area.get("0.0", tk.END),
+                    Convertion_Area(a, b, entry_Area.get("0.0", tk.END)),
                     "....",
                 )
-                entry_Area.delete(0, "end")
-                entry_Area.insert(0, str(SpeedAns) + " " + Area_functions[b])
+                entry_Area.delete("0.0", "end")
+                entry_Area.insert("0.0", str(SpeedAns) + " " + Area_functions[b])
             else:
                 SpeedAns = "Syntax Error"
-                entry_Area.delete(0, "end")
-                entry_Area.insert(0, SpeedAns)
+                entry_Area.delete("0.0", "end")
+                entry_Area.insert("0.0", SpeedAns)
         else:
-            entry_Area.delete(0, "end")
-            entry_Area.insert(0, SpeedData)
+            entry_Area.insert(entry_Area.index("insert"), val)
 
 
 def MassConvertion(a, b, val):
@@ -1234,15 +1781,16 @@ def MassConvertion(a, b, val):
     global PerformMass
     global SpeedData
     global SpeedAns
+    global ActiveEntry
+    global resetFrames
 
     a = int(a) - 1
     b = int(b) - 1
     Mass_functions = [
-        "(t)",
-        "(t)",
+        "(UK t)",
+        "(US t)",
         "(lb)",
         "oz)",
-        "(kg)",
         "(kg)",
         "(g)",
     ]
@@ -1262,6 +1810,8 @@ def MassConvertion(a, b, val):
         )
         label_Mass.grid(column=1, row=1)
         entry_Mass.grid(column=1, row=2)
+        ActiveEntry = entry_Mass
+        resetFrames = 1
 
     else:
 
@@ -1270,38 +1820,115 @@ def MassConvertion(a, b, val):
 
         if a_str == "AC":
             his_data.set(SpeedData + " " + str(SpeedAns))
-            entry_Mass.delete(0, "end")
-            entry_Mass.insert(0, "")
+            entry_Mass.delete("0.0", "end")
+            entry_Mass.insert("0.0", "")
             SpeedData = ""
         elif a_str == "C":
-            CurrentVal = entry_Mass.index("insert")
-            entry_Mass.delete(CurrentVal - 1)
-            SpeedData = entry_Mass.get()
+            entry_Mass.delete("insert-1c")
+            SpeedData = entry_Mass.get("0.0", tk.END)
 
         elif val == "Ans":
-            entry_Mass.delete(0, "end")
-            entry_Mass.insert(0, SpeedAns)
+            entry_Mass.delete("0.0", "end")
+            entry_Mass.insert("0.0", SpeedAns)
 
         elif val == "=":
-            print(entry_Mass.get(), SpeedData)
-            if entry_Mass.get().isnumeric():
-                SpeedAns = Convertion_Mass(a, b, entry_Mass.get())
+            if int(entry_Mass.get("0.0", tk.END)):
+                SpeedAns = Convertion_Mass(a, b, entry_Mass.get("0.0", tk.END))
                 print(
                     a,
                     b,
-                    entry_Mass.get(),
-                    Convertion_Mass(a, b, entry_Mass.get()),
+                    entry_Mass.get("0.0", tk.END),
+                    Convertion_Mass(a, b, entry_Mass.get("0.0", tk.END)),
                     "....",
                 )
-                entry_Mass.delete(0, "end")
-                entry_Mass.insert(0, str(SpeedAns) + " " + Mass_functions[b])
+                entry_Mass.delete("0.0", "end")
+                entry_Mass.insert("0.0", str(SpeedAns) + " " + Mass_functions[b])
             else:
                 SpeedAns = "Syntax Error"
-                entry_Mass.delete(0, "end")
-                entry_Mass.insert(0, SpeedAns)
+                entry_Mass.delete("0.0", "end")
+                entry_Mass.insert("0.0", SpeedAns)
         else:
-            entry_Mass.delete(0, "end")
-            entry_Mass.insert(0, SpeedData)
+            entry_Mass.insert(entry_Mass.index("insert"), val)
+
+
+def LengthConvertion(a, b, val):
+    global ModeMenu_main_convert_select_Length
+    global ModeMenu_main_convert
+    global PerformLength
+    global SpeedData
+    global SpeedAns
+    global ActiveEntry
+    global resetFrames
+
+    a = int(a) - 1
+    b = int(b) - 1
+    Length_functions = [
+        "(mm)",
+        "(cm)",
+        "(m)",
+        "(km)",
+        "(in)",
+        "(ft)",
+        "(yf)",
+        "(mi)",
+        "(NM)",
+        "(mil)",
+    ]
+    if not PerformLength:
+        PerformLength = True
+        print("truetem")
+        ModeMenu_main_convert.grid_remove()
+        ModeMenu_main_convert_Length.grid_remove()
+        ModeMenu_main_convert_select_Length.grid(column=1, row=2)
+        label_Length = customtkinter.CTkLabel(
+            master=ModeMenu_main_convert_select_Length,
+            width=(WINW),
+            text=str("convert: " + Length_functions[a] + "to: " + Length_functions[b]),
+            height=(40),
+            font=("Roboto", 12),
+            corner_radius=0,
+        )
+        label_Length.grid(column=1, row=1)
+        entry_Length.grid(column=1, row=2)
+        ActiveEntry = entry_Length
+        resetFrames = 1
+    else:
+
+        a_str = str(val)
+        SpeedData += a_str
+
+        if a_str == "AC":
+            his_data.set(SpeedData + " " + str(SpeedAns))
+            entry_Length.delete("0.0", "end")
+            entry_Length.insert("0.0", "")
+            SpeedData = ""
+        elif a_str == "C":
+
+            entry_Length.delete("insert-1c")
+            SpeedData = entry_Length.get()
+
+        elif val == "Ans":
+            entry_Length.delete("0.0", "end")
+            entry_Length.insert("0.0", SpeedAns)
+
+        elif val == "=":
+            if int(entry_Length.get("0.0", tk.END)):
+                SpeedAns = Convertion_Length(a, b, entry_Length.get("0.0", tk.END))
+                print(
+                    a,
+                    b,
+                    entry_Length.get("0.0", tk.END),
+                    Convertion_Length(a, b, entry_Length.get("0.0", tk.END)),
+                    "....",
+                )
+                entry_Length.delete("0.0", "end")
+                entry_Length.insert("0.0", str(SpeedAns) + " " + Length_functions[b])
+            else:
+                SpeedAns = "Syntax Error"
+                entry_Length.delete("0.0", "end")
+                entry_Length.insert("0.0", SpeedAns)
+        else:
+            entry_Length.insert(entry_Length.index("insert"), val)
 
 
 def TimeConvertion(a, b, val):
@@ -1310,6 +1937,8 @@ def TimeConvertion(a, b, val):
     global PerformTime
     global SpeedData
     global SpeedAns
+    global ActiveEntry
+    global resetFrames
 
     a = int(a) - 1
     b = int(b) - 1
@@ -1336,6 +1965,8 @@ def TimeConvertion(a, b, val):
         )
         label_Time.grid(column=1, row=1)
         entry_Time.grid(column=1, row=2)
+        ActiveEntry = entry_Time
+        resetFrames = 1
 
     else:
         a_str = str(val)
@@ -1343,38 +1974,35 @@ def TimeConvertion(a, b, val):
 
         if a_str == "AC":
             his_data.set(SpeedData + " " + str(SpeedAns))
-            entry_Time.delete(0, "end")
-            entry_Time.insert(0, "")
+            entry_Time.delete("0.0", "end")
+            entry_Time.insert("0.0", "")
             SpeedData = ""
         elif a_str == "C":
-            CurrentVal = entry_Time.index("insert")
-            entry_Time.delete(CurrentVal - 1)
-            SpeedData = entry_Time.get()
+            entry_Time.delete("insert-1c")
+            SpeedData = entry_Time.get("0.0", tk.END)
 
         elif val == "Ans":
-            entry_Time.delete(0, "end")
-            entry_Time.insert(0, SpeedAns)
+            entry_Time.delete("0.0", "end")
+            entry_Time.insert("0.0", SpeedAns)
 
         elif val == "=":
-            print(entry_Time.get(), SpeedData)
-            if entry_Time.get().isnumeric():
-                SpeedAns = Convertion_Time(a, b, entry_Time.get())
+            if int(entry_Time.get("0.0", tk.END)):
+                SpeedAns = Convertion_Time(a, b, entry_Time.get("0.0", tk.END))
                 print(
                     a,
                     b,
-                    entry_Time.get(),
-                    Convertion_Time(a, b, entry_Time.get()),
+                    entry_Time.get("0.0", tk.END),
+                    Convertion_Time(a, b, entry_Time.get("0.0", tk.END)),
                     "....",
                 )
-                entry_Time.delete(0, "end")
-                entry_Time.insert(0, str(SpeedAns) + " " + Time_functions[b])
+                entry_Time.delete("0.0", "end")
+                entry_Time.insert("0.0", str(SpeedAns) + " " + Time_functions[b])
             else:
                 SpeedAns = "Syntax Error"
-                entry_Time.delete(0, "end")
-                entry_Time.insert(0, SpeedAns)
+                entry_Time.delete("0.0", "end")
+                entry_Time.insert("0.0", SpeedAns)
         else:
-            entry_Time.delete(0, "end")
-            entry_Time.insert(0, SpeedData)
+            entry_Time.insert(entry_Time.index("insert"), val)
 
 
 def volumeConvertion(a, b, val):
@@ -1383,6 +2011,8 @@ def volumeConvertion(a, b, val):
     global PerformVolume
     global SpeedData
     global SpeedAns
+    global ActiveEntry
+    global resetFrames
 
     a = int(a) - 1
     b = int(b) - 1
@@ -1410,6 +2040,8 @@ def volumeConvertion(a, b, val):
         )
         label_volume.grid(column=1, row=1)
         entry_volume.grid(column=1, row=2)
+        ActiveEntry = entry_volume
+        resetFrames = 1
 
     else:
 
@@ -1418,38 +2050,35 @@ def volumeConvertion(a, b, val):
 
         if a_str == "AC":
             his_data.set(SpeedData + " " + str(SpeedAns))
-            entry_volume.delete(0, "end")
-            entry_volume.insert(0, "")
+            entry_volume.delete("0.0", "end")
+            entry_volume.insert("0.0", "")
             SpeedData = ""
         elif a_str == "C":
-            CurrentVal = entry_volume.index("insert")
-            entry_volume.delete(CurrentVal - 1)
-            SpeedData = entry_volume.get()
+            entry_volume.delete("insert-1c")
+            SpeedData = entry_volume.get("0.0", tk.END)
 
         elif val == "Ans":
-            entry_volume.delete(0, "end")
-            entry_volume.insert(0, SpeedAns)
+            entry_volume.delete("0.0", "end")
+            entry_volume.insert("0.0", SpeedAns)
 
         elif val == "=":
-            print(entry_volume.get(), SpeedData)
-            if entry_volume.get().isnumeric():
-                SpeedAns = Convertion_volume(a, b, entry_volume.get())
+            if int(entry_volume.get("0.0", tk.END)):
+                SpeedAns = Convertion_volume(a, b, entry_volume.get("0.0", tk.END))
                 print(
                     a,
                     b,
-                    entry_volume.get(),
-                    Convertion_volume(a, b, entry_volume.get()),
+                    entry_volume.get("0.0", tk.END),
+                    Convertion_volume(a, b, entry_volume.get("0.0", tk.END)),
                     "....",
                 )
-                entry_volume.delete(0, "end")
-                entry_volume.insert(0, str(SpeedAns) + " " + volume_functions[b])
+                entry_volume.delete("0.0", "end")
+                entry_volume.insert("0.0", str(SpeedAns) + " " + volume_functions[b])
             else:
                 SpeedAns = "Syntax Error"
-                entry_volume.delete(0, "end")
-                entry_volume.insert(0, SpeedAns)
+                entry_volume.delete("0.0", "end")
+                entry_volume.insert("0.0", SpeedAns)
         else:
-            entry_volume.delete(0, "end")
-            entry_volume.insert(0, SpeedData)
+            entry_volume.insert(entry_volume.index("insert"), val)
 
 
 def Convertor(value):
@@ -1459,13 +2088,83 @@ def Convertor(value):
     global Temperature
     global Mass
     global Area
+    global Length
+    global Equation
+    global Matrix
     global volume
     global mode_menu_convert
+    global mode_more
 
     right = "-->"
     left = "<--"
     value = str(value)
-    if value == "1":
+
+    print("........................mode", mode_more)
+    if mode_more:
+        if value == "3":
+            mode_menu_reset()
+            mode_menu("mode_menu_convert")
+        elif value == "1":
+            mode_more = False
+            Equation = True
+            ModeMenu_main_modes.grid_remove()
+            ModeMenu_main_convert_equation.grid(column=2, row=4)
+            equation_functions = [
+                "AX = 0",
+                "AX" + subscriptValues[2] + "+ AX  = 0",
+                "AX" + subscriptValues[3] + "+ AX" + subscriptValues[2] + "+ AX  = 0",
+                "AX"
+                + subscriptValues[4]
+                + "+ AX"
+                + subscriptValues[3]
+                + "+ AX"
+                + subscriptValues[2]
+                + "+ AX  = 0",
+            ]
+            col_val = 1
+            row_val = 0
+            num = 0
+            for equationChar in equation_functions:
+                row_val += 1
+                num += 1
+                label = customtkinter.CTkLabel(
+                    master=ModeMenu_main_convert_equation,
+                    width=(WINW),
+                    text=str(str(num) + " " + equationChar),
+                    height=(140 / 3),
+                    font=("Calculator", 16, "bold"),
+                    justify="left",
+                    anchor="w",
+                )
+                label.grid(column=col_val, row=row_val)
+        elif value == "2":
+            mode_more = False
+            Matrix = True
+            ModeMenu_main_modes.grid_remove()
+            ModeMenu_main_convert_matrix.grid(column=2, row=4)
+            matrix_functions = ["2 × 2", "2 × 3", "3 × 2", "3 × 3 "]
+            col_val = 1
+            row_val = 0
+            num = 0
+            for matrixChar in matrix_functions:
+                row_val += 1
+                num += 1
+                label = customtkinter.CTkLabel(
+                    master=ModeMenu_main_convert_matrix,
+                    width=(WINW / 2),
+                    text=str(str(num) + " " + matrixChar),
+                    height=(140 / 3),
+                    font=("Calculator", 16, "bold"),
+                    justify="left",
+                    anchor="w",
+                )
+                label.grid(column=col_val, row=row_val)
+
+                if row_val == 3:
+                    row_val = 0
+                    col_val += 1
+
+    elif value == "1":
         if direction == right:
             direction = left
         else:
@@ -1668,7 +2367,46 @@ def Convertor(value):
                 row_val = 0
 
     elif value == "3":
-        print("3")
+        if direction == right:
+            direction = left
+        else:
+            direction = right
+        mode_menu_convert = "In State"
+        Length = True
+        ModeMenu_main_convert.grid_remove()
+        # speed Modes functionality
+        ModeMenu_main_convert_Length.grid(column=2, row=4)
+        Length_functions = [
+            "Millimetres(mm)",
+            "Centimetres(cm)",
+            "Metres(m)",
+            "Kilometres(km)",
+            "Inches(in)",
+            "Feet(ft)",
+            "Yards(yf)",
+            "Miles(mi)",
+            "Nautical miles(NM)",
+            "Mils(mil)",
+        ]
+        col_val = 1
+        row_val = 0
+        num = 0
+        for LengthChar in Length_functions:
+            row_val += 1
+            num += 1
+            label = customtkinter.CTkLabel(
+                master=ModeMenu_main_convert_Length,
+                width=(WINW / 2),
+                text=str(str(num) + " " + LengthChar + " " + direction),
+                height=(140 / 4),
+                font=("Calculator", 14, "bold"),
+                justify="left",
+                anchor="w",
+            )
+            label.grid(column=col_val, row=row_val)
+            if row_val == 5:
+                col_val += 1
+                row_val = 0
     elif value == "4":
         if direction == right:
             direction = left
@@ -1692,9 +2430,9 @@ def Convertor(value):
             num += 1
             label = customtkinter.CTkLabel(
                 master=ModeMenu_main_convert_Temperature,
-                width=(WINW / 2),
+                width=(WINW),
                 text=str(str(num) + " " + TemperatureChar + " " + direction),
-                height=(140 / 4),
+                height=(140 / 3),
                 font=("Calculator", 16, "bold"),
                 justify="left",
                 anchor="w",
@@ -1707,15 +2445,23 @@ def mode_menu_reset():
     global compute
     global PerformSpeed
     global PerformTime
+    global PerformLength
     global PerformMass
+    global PerformArea
     global PerformTemperature
     global PerformVolume
+    global PerformEquation
+    global PerformMatrix
+    global Equation
+    global Matrix
     global SpeedAns
     global SpeedData
+    global mode_more
     global compute
     global Temperature
     global Mass
     global Area
+    global Length
     global Time
     global volume
     global speed
@@ -1724,6 +2470,7 @@ def mode_menu_reset():
     global entry_speed
     global entry_Time
     global entry_Mass
+    global direction
     global entry_Temperature
     global ModeMenu_main_convert
     global ModeMenu_main_convert_select
@@ -1735,14 +2482,27 @@ def mode_menu_reset():
     global ModeMenu_main_convert_Time
     global ModeMenu_main_convert_speed
     global ModeMenu_main_convert_Mass
+    global ActiveEntry
+    global resetFrames
+
+    ActiveEntry = entry
+    resetFrames = 0
 
     mode_menu_convert = False
+    PerformArea = False
+    direction = False
     compute = True
     ModeMenu_main_convert_select.grid_remove()
     ModeMenu_main_convert_select_speed.grid_remove()
+    ModeMenu_main_convert_select_equation.grid_remove()
+    ModeMenu_main_convert_select_matrix.grid_remove()
     ModeMenu_main_convert_speed.grid_remove()
+    ModeMenu_main_convert_equation.grid_remove()
+    ModeMenu_main_convert_matrix.grid_remove()
     ModeMenu_main_convert_Area.grid_remove()
+    ModeMenu_main_convert_Length.grid_remove()
     ModeMenu_main_convert_select_Time.grid_remove()
+    ModeMenu_main_convert_select_Length.grid_remove()
     ModeMenu_main_convert_Temperature.grid_remove()
     ModeMenu_main_convert_select_Mass.grid_remove()
     ModeMenu_main_convert_select_volume.grid_remove()
@@ -1756,17 +2516,24 @@ def mode_menu_reset():
     PerformSpeed = False
     PerformTime = False
     PerformArea = False
+    PerformLength = False
     PerformTemperature = False
     PerformMass = False
     PerformVolume = False
+    PerformEquation = False
+    PerformMatrix = False
     SpeedAns = ""
     SpeedData = ""
     SpTime = ""
     compute = True
     speed = False
+    Equation = False
+    Matrix = False
+    mode_more = False
     Time = False
     Area = False
     Mass = False
+    Length = False
     volume = False
     Temperature = False
     ConvertTo = 0
@@ -1780,20 +2547,75 @@ def mode_menu_reset():
         entry_Mass,
         entry_Area,
         entry_volume,
+        entry_Length,
+        entry_equation,
+        entry_matrix,
     ]
     for entryFrame in EntrySlots:
-        entryFrame.delete(0, "end")
-        entryFrame.insert(0, " ")
+        entryFrame.delete("0.0", "end")
+        entryFrame.insert("0.0", " ")
         entryFrame.grid_remove()
 
-    print("reset")
+
+def reset_frame_menu(value):
+    global mode_menu_convert
+    global compute
+    global mode_menu_convert
+    global mode_more
+
+    mode_menu_reset()
+
+    mode_menu_convert = True
+    compute = False
+    entry.grid_remove()
+    ModeMenu_main_convert.grid(column=2, row=4)
+    if mode_menu_convert != "In State" and mode_menu_convert == True:
+        Convertor(value)
 
 
 def mode_menu(value):
     global mode_menu_convert
     global compute
-    if value == "mode_menu_convert":
-        if mode_menu_convert == "In State":
+    global direction
+    global speed
+    global Time
+    global Temperature
+    global Mass
+    global Area
+    global Length
+    global Equation
+    global Matrix
+    global volume
+    global mode_menu_convert
+    global mode_more
+    global resetFrames
+
+    if resetFrames == 1:
+        if Area:
+            reset_frame_menu("1")
+        elif speed:
+            reset_frame_menu("6")
+        elif Time:
+            reset_frame_menu("7")
+        elif Temperature:
+            reset_frame_menu("4")
+        if Mass:
+            reset_frame_menu("5")
+        elif Length:
+            reset_frame_menu("3")
+        elif volume:
+            reset_frame_menu("2")
+
+        elif Equation:
+            mode_more
+            reset_frame_menu("8")
+            Calc_input_display("1")
+        if Matrix:
+            mode_more
+            reset_frame_menu("8")
+            Calc_input_display("2")
+    elif value == "mode_menu_convert":
+        if mode_menu_convert == "In State" or mode_menu_convert == True:
             mode_menu_reset()
         else:
             mode_menu_convert = True
@@ -1831,7 +2653,6 @@ def mode_menu(value):
                 if row_val == 4:
                     col_val += 1
                     row_val = 0
-                print(row_val, col_val)
 
 
 def Calc_input_display(value):
@@ -1844,23 +2665,71 @@ def Calc_input_display(value):
     global Ans
     global PerformSpeed
     global data
+    global Equation
+    global Matrix
     global Time
     global Area
     global Mass
+    global Length
     global volume
+    global mode_more
     global PerformTime
+    global PerformLength
     global PerformVolume
+    global PerformEquation
+    global PerformMatrix
     global PerformTemperature
     global PerformMass
     global mode_menu_convert
     global ConvertTo
     global ConvertFrom
+    global subscript_move
+    global ActiveEntry
 
     global new
-    entry.focus_set()
+    ActiveEntry.focus_set()
 
     if mode_menu_convert != "In State" and mode_menu_convert == True:
         Convertor(value)
+    elif mode_more:
+        Convertor(value)
+    elif Equation:
+        if (
+            value == "="
+            or value == "C"
+            or value == "Ans"
+            or value == "AC"
+            or value == "×"
+            or value == "+"
+            or value == "-"
+            or value == "÷"
+            or value.isnumeric()
+        ):
+            if PerformEquation == True:
+                EquationConvertion(ConvertTo, value)
+
+            else:
+                ConvertTo = value
+                EquationConvertion(ConvertTo, value)
+    elif Matrix:
+        if (
+            value == "="
+            or value == "C"
+            or value == "Ans"
+            or value == "AC"
+            or value == "×"
+            or value == "+"
+            or value == "-"
+            or value == "÷"
+            or value.isnumeric()
+        ):
+            if PerformMatrix == True:
+                MatrixConvertion(ConvertTo, value)
+
+            else:
+                ConvertTo = value
+                MatrixConvertion(ConvertTo, value)
+
     elif speed:
         if (
             value == "="
@@ -1868,7 +2737,6 @@ def Calc_input_display(value):
             or value == "Ans"
             or value == "AC"
             or value.isnumeric()
-            and int(value) < 9
         ):
 
             if PerformSpeed == True:
@@ -1888,7 +2756,6 @@ def Calc_input_display(value):
             or value == "AC"
             or value.isnumeric()
         ):
-            print(PerformTime)
             if PerformTime == True:
                 TimeConvertion(ConvertTo, ConvertFrom, value)
 
@@ -1905,19 +2772,19 @@ def Calc_input_display(value):
             or value == "Ans"
             or value == "AC"
             or value.isnumeric()
-            and int(value) < 7
         ):
-            print("........temp.......", PerformTemperature)
+
             if PerformTemperature == True:
+
                 TemperatureConvertion(ConvertTo, ConvertFrom, value)
             elif ConvertTo != 0:
-                print(".......d........", PerformTemperature)
+
                 ConvertFrom = value
                 TemperatureConvertion(ConvertTo, ConvertFrom, value)
             else:
-                print("..........f.....", PerformTemperature)
+
                 ConvertTo = value
-                Convertor("8")
+                Convertor("4")
     elif Mass:
         if (
             value == "="
@@ -1925,17 +2792,16 @@ def Calc_input_display(value):
             or value == "Ans"
             or value == "AC"
             or value.isnumeric()
-            and int(value) < 7
         ):
-            print("...............", PerformMass)
+
             if PerformMass == True:
                 MassConvertion(ConvertTo, ConvertFrom, value)
             elif ConvertTo != 0:
-                print(".......d........", PerformMass)
+
                 ConvertFrom = value
                 MassConvertion(ConvertTo, ConvertFrom, value)
             else:
-                print("..........f.....", PerformMass)
+
                 ConvertTo = value
                 Convertor("5")
     elif Area:
@@ -1946,15 +2812,15 @@ def Calc_input_display(value):
             or value == "AC"
             or value.isnumeric()
         ):
-            print("...............", PerformArea)
+
             if PerformArea == True:
                 AreaConvertion(ConvertTo, ConvertFrom, value)
             elif ConvertTo != 0:
-                print(".......d........", PerformArea)
+
                 ConvertFrom = value
                 AreaConvertion(ConvertTo, ConvertFrom, value)
             else:
-                print("..........f.....", PerformArea)
+
                 ConvertTo = value
                 Convertor("1")
     elif volume:
@@ -1968,30 +2834,50 @@ def Calc_input_display(value):
             if PerformVolume == True:
                 volumeConvertion(ConvertTo, ConvertFrom, value)
             elif ConvertTo != 0:
-                print(".......d........", PerformVolume)
                 ConvertFrom = value
                 volumeConvertion(ConvertTo, ConvertFrom, value)
             else:
-                print("..........f.....", PerformVolume)
                 ConvertTo = value
                 Convertor("2")
+    elif Length:
+        if (
+            value == "="
+            or value == "C"
+            or value == "Ans"
+            or value == "AC"
+            or value.isnumeric()
+        ):
+            if PerformLength == True:
+                LengthConvertion(ConvertTo, ConvertFrom, value)
+            elif ConvertTo != 0:
+                ConvertFrom = value
+                LengthConvertion(ConvertTo, ConvertFrom, value)
+            else:
+                ConvertTo = value
+                Convertor("3")
 
     elif compute:
         a = str(value)
+        if subscript_move:
+            if int(a):
+                a = subscriptValues[int(a)]
+                subscript_move = False
+
         if a != "AC" and a != "Ans" and a != "C" and a != "=" and a != "S<=>D":
             if a == "ⁿ":
                 a += "^("
             elif a == "\n":
                 a = ""
             elif a == "logₓX":
-                a = "log.()()"
+                subscript_move = True
+                a = "log"
         if a == "S<=>D":
             if isfloat(Ans):
                 Ans = Fraction(Decimal(str(Ans)))
                 entry.delete("0.0", "end")
                 entry.insert("0.0", Ans)
                 OriginalData = str(Ans)
-            else:
+            elif Ans != " ":
                 Ans = Fraction(str(Ans))
                 entry.delete("0.0", "end")
                 entry.insert("0.0", Ans)
@@ -2027,23 +2913,20 @@ def Calc_input_display(value):
                 entry.delete("0.0", "end")
                 entry.insert("0.0", Ans)
         else:
-            print(entry.index("insert"))
             entry.insert(entry.index("insert"), a)
 
 
 def mode_menu_more():
     global mode_menu_convert
+    global mode_more
 
     mode_menu_convert = "In State"
+    mode_more = True
     ModeMenu_main_convert.grid_remove()
     ModeMenu_main_modes.grid(column=2, row=4)
     modes_functions = [
-        "Differentiation (dx)",
-        "Integration",
-        "Limits (lim)",
         "Equations (Eq)",
         "Matrix",
-        "Algebra",
         "...prev",
     ]
     col_val = 1
@@ -2054,7 +2937,7 @@ def mode_menu_more():
         num += 1
         label = customtkinter.CTkLabel(
             master=ModeMenu_main_modes,
-            width=(WINW / 2),
+            width=WINW,
             text=str(str(num) + " " + modeChar),
             height=(140 / 4),
             font=("Calculator", 16, "bold"),
@@ -2074,9 +2957,8 @@ def conditionChecker(userInput):
 
         if Index + 1 != len(userInput):
             if char in basicArrays and userInput[Index + 1] in basicArrays:
-                print("288")
-                value = False
 
+                value = False
             if (
                 char != "√"
                 and char != "π"
@@ -2087,13 +2969,12 @@ def conditionChecker(userInput):
                 and char in complexArrays
                 and userInput[Index + 3] in complexArrays
             ):
-
                 value = False
             if char.isnumeric() and userInput[Index + 1] in complexArrays:
-                print("296")
+
                 value = False
             if char == "(" and userInput[Index + 1] == ")":
-                print("302")
+
                 value = False
 
             if (
@@ -2102,14 +2983,12 @@ def conditionChecker(userInput):
                 and char in complexArrays
                 and userInput[Index + 3] == ")"
             ):
-                print("306")
+
                 value = False
 
         else:
             if char in basicArrays or char == "(":
-                print("309")
                 value = False
-    print(value)
     return value
 
 
@@ -2127,125 +3006,215 @@ def computeResult(userInput):
     if len(userInput) == 0:
         print("Cant Compute")
     else:
+        loopCondition = False
+        valueCheck = ["t", "S", "c", "R", "D", "√", "l"]
+        for valueChar in valueCheck:
+            if valueChar in userInput:
+                loopCondition = True
 
-        for entry in userInput:
-
-            entry = str(entry)
-
-            # solve breakdown complex
-            if "t" in entry:
-                multiFactor = 1
-                index = userInput.index(entry)
-                if "⁻" in userInput and userInput[index + 3] == "⁻":
-                    SingleFactor = 1
-                    print("valeues", userInput[index + 5])
-                    value = math.atan(float(userInput[index + 5]))
-                elif len(userInput) != index + 1 and userInput[index + 3] == "×":
-                    value = math.tan(float(userInput[index + 2]))
-
-                else:
-                    value = math.tan(float(userInput[index + 3]))
-
-            if "S" in entry:
-                multiFactor = 1
-                index = userInput.index(entry)
-                if "⁻" in userInput and userInput[index + 3] == "⁻":
-                    SingleFactor = 1
-                    print(userInput[index + 5])
-                    value = math.sin(float(userInput[index + 5]))
-                elif len(userInput) != index + 1 and userInput[index + 3] == "×":
-
-                    value = math.sin(float(userInput[index + 2]))
-
-                else:
-                    value = math.sin(float(userInput[index + 3]))
-
-            if "c" in entry:
-                multiFactor = 1
-                index = userInput.index(entry)
-                if "⁻" in userInput and userInput[index + 3] == "⁻":
-                    SingleFactor = 1
-                    value = math.acos(float(userInput[index + 5]))
-                elif len(userInput) != index + 1 and userInput[index + 3] == "×":
-
-                    value = math.tan(float(userInput[index + 2]))
-
-                else:
-                    value = math.tan(float(userInput[index + 3]))
-
-            if "R" in entry:
-                multiFactor = 1
-
-                index = userInput.index(entry)
-
-                if len(userInput) != index + 1 and userInput[index + 3] == "×":
-
-                    value = math.tan(float(userInput[index + 2]))
-
-                else:
-                    value = math.tan(float(userInput[index + 3]))
-
-            if "D" in entry:
-                multiFactor = 1
-
-                index = userInput.index(entry)
-
-                if len(userInput) != index + 1 and userInput[index + 3] == "×":
-
-                    value = math.tan(float(userInput[index + 2]))
-
-                else:
-                    value = math.tan(float(userInput[index + 3]))
-
-            if "√" in entry:
-                index = userInput.index(entry)
-                if len(userInput) != index + 1 and userInput[index + 1] == "×":
-                    value = math.sqrt(float(userInput[index + 1]))
-                    userInput.pop(index + 1)
+        if loopCondition == True:
+            for entry in userInput:
+                entry = str(entry)
+                # solve breakdown complex
+                if "t" in entry:
                     multiFactor = 1
+                    index = userInput.index(entry)
+                    if "⁻" in userInput and userInput[index + 3] == "⁻":
+                        SingleFactor = 1
+                        number = userInput[index + 5]
+                        if isfloat(number):
+                            number = float(userInput[index + 5])
+                        else:
+                            number = int(userInput[index + 5])
+                        value = math.atan(number)
+                    elif len(userInput) != index + 1 and userInput[index + 3] == "×":
+                        number = userInput[index + 2]
+                        if isfloat(number):
+                            number = float(userInput[index + 2])
+                        else:
+                            number = int(userInput[index + 2])
+                        value = math.atan(number)
+                    else:
+                        number = userInput[index + 3]
+                        if isfloat(number):
+                            number = float(userInput[index + 3])
+                        else:
+                            number = int(userInput[index + 3])
+                        value = math.atan(number)
+
+                if "S" in entry:
+                    multiFactor = 1
+                    index = userInput.index(entry)
+                    if "⁻" in userInput and userInput[index + 3] == "⁻":
+                        SingleFactor = 1
+                        number = userInput[index + 5]
+                        if isfloat(number):
+                            number = float(userInput[index + 5])
+                        else:
+                            number = int(userInput[index + 5])
+
+                        value = math.sin(number)
+                    elif len(userInput) != index + 1 and userInput[index + 3] == "×":
+                        number = userInput[index + 2]
+                        if isfloat(number):
+                            number = float(userInput[index + 2])
+                        else:
+                            number = int(userInput[index + 2])
+                        value = math.sin(number)
+
+                    else:
+                        value = math.sin(float(userInput[index + 3]))
+
+                if "c" in entry:
+                    multiFactor = 1
+                    index = userInput.index(entry)
+                    if "⁻" in userInput and userInput[index + 3] == "⁻":
+                        SingleFactor = 1
+                        number = userInput[index + 5]
+                        if isfloat(number):
+                            number = float(userInput[index + 5])
+                        else:
+                            number = int(userInput[index + 5])
+
+                        value = math.acos(number)
+                    elif len(userInput) != index + 1 and userInput[index + 3] == "×":
+                        number = userInput[index + 2]
+                        if isfloat(number):
+                            number = float(userInput[index + 2])
+                        else:
+                            number = int(userInput[index + 2])
+
+                        value = math.cos(number)
+
+                    else:
+                        number = userInput[index + 3]
+                        if isfloat(number):
+                            number = float(userInput[index + 3])
+                        else:
+                            number = int(userInput[index + 3])
+
+                        value = math.cos(number)
+
+                if "R" in entry:
+                    multiFactor = 1
+
+                    index = userInput.index(entry)
+
+                    if len(userInput) != index + 1 and userInput[index + 3] == "×":
+                        number = userInput[index + 2]
+                        if isfloat(number):
+                            number = float(userInput[index + 2])
+                        else:
+                            number = int(userInput[index + 2])
+
+                        value = math.rad(number)
+
+                    else:
+                        number = userInput[index + 3]
+                        if isfloat(number):
+                            number = float(userInput[index + 3])
+                        else:
+                            number = int(userInput[index + 3])
+
+                        value = math.rad(number)
+
+                if "D" in entry:
+                    multiFactor = 1
+
+                    index = userInput.index(entry)
+
+                    if len(userInput) != index + 1 and userInput[index + 3] == "×":
+                        number = userInput[index + 2]
+                        if isfloat(number):
+                            number = float(userInput[index + 2])
+                        else:
+                            number = int(userInput[index + 2])
+
+                        value = math.deg(float(userInput[index + 2]))
+
+                    else:
+                        value = math.deg(number)
+
+                if "√" in entry:
+                    index = userInput.index(entry)
+                    if len(userInput) != index + 1 and userInput[index + 1] == "×":
+                        number = userInput[index + 1]
+                        if isfloat(number):
+                            number = float(userInput[index + 1])
+                        else:
+                            number = int(userInput[index + 1])
+
+                        value = math.sqrt(number)
+                        userInput.pop(index + 1)
+                        multiFactor = 1
+                    else:
+                        number = userInput[index + 1]
+                        if isfloat(number):
+                            number = float(userInput[index + 1])
+                        else:
+                            number = int(userInput[index + 1])
+
+                        value = math.sqrt(number)
+                        userInput.pop(index + 1)
+
+                if "l" in entry:
+                    multiFactor = 1
+
+                    index = userInput.index(entry)
+
+                    if len(userInput) != index + 1 and userInput[index + 3] == ".":
+                        if isfloat(userInput[index + 4]):
+                            value = "invalid"
+                        else:
+                            baseVal = int(userInput[index + 4])
+                            numVal = int(userInput[index + 5])
+                            value = (math.log(baseVal)) * (numVal)
+                            userInput.pop(index + 3)
+
+                    elif len(userInput) != index + 1 and userInput[index + 3] == "×":
+                        number = userInput[index + 2]
+                        if isfloat(number):
+                            number = float(userInput[index + 2])
+                        else:
+                            number = int(userInput[index + 2])
+
+                        value = math.log(number)
+
+                    else:
+                        number = userInput[index + 3]
+                        valueChr = userInput[index + 3]
+                        if userInput[index + 3] in subscriptValues:
+                            valueChr = subscriptValues.index(userInput[index + 3]) + 1
+
+                        if isfloat(number):
+                            number = float(valueChr)
+                        else:
+                            number = int(valueChr)
+                        value = math.log(number)
+
+                if multiFactor == 1 and SingleFactor == 1:
+                    userInput[index] = str(value)
+                    for i in range(4):
+                        userInput.pop(index + 1)
+
+                elif multiFactor == 1 and SingleFactor == 0:
+                    userInput[index] = str(value)
+                    for i in range(2):
+                        userInput.pop(index + 1)
                 else:
-                    value = math.sqrt(userInput[index + 1])
-                    userInput.pop(index + 1)
+                    userInput[index] = str(value)
+                    print("val", userInput, userInput[index])
 
-            if "l" in entry:
-                multiFactor = 1
+                multiFactor = 0
+                SingleFactor = 0
 
-                index = userInput.index(entry)
-
-                if len(userInput) != index + 1 and userInput[index + 3] == ".":
-                    baseVal = int(userInput[index + 4])
-                    numVal = int(userInput[index + 5])
-
-                    print(baseVal, numVal)
-                    value = (math.log(baseVal)) * (numVal)
-                    userInput.pop(index + 3)
-
-                elif len(userInput) != index + 1 and userInput[index + 3] == "×":
-
-                    value = math.log(float(userInput[index + 2]))
-
-                else:
-                    value = math.log(float(userInput[index + 3]))
-
-            if multiFactor == 1 and SingleFactor == 1:
-                userInput[index] = str(value)
-                for i in range(4):
-                    userInput.pop(index + 1)
-
-            elif multiFactor == 1 and SingleFactor == 0:
-                userInput[index] = str(value)
-                for i in range(2):
-                    userInput.pop(index + 1)
-            else:
-                userInput[index] = str(value)
-                print("val", userInput, userInput[index], index + 1, len(userInput))
-
-            multiFactor = 0
-            SingleFactor = 0
         evaluateChar = ""
+
         for char in userInput:
             charIndex = userInput.index(char)
-            if char == "×":
+            if char in subscriptValues:
+                valueChr = subscriptValues.index(char) + 1
+            elif char == "×":
                 evaluateChar += "*"
             elif char == "π":
                 evaluateChar += "22/7"
@@ -2264,30 +3233,27 @@ def computeResult(userInput):
                 and userInput[charIndex + 1] not in basicArrays
                 and isinstance(userInput[charIndex + 1], str) == False
             ):
+
                 evaluateChar += str(char) + "*"
             else:
                 evaluateChar += str(char)
-        try:
-            userInput = eval(evaluateChar)
 
+        try:
+            print("userInput-", evaluateChar, index, userInput)
+            userInput = eval(evaluateChar)
         except Exception as e:
             userInput = "Invalid syntax"
+
         return userInput
 
 
 def bracket_solu(InputData):
     startPosition = 0
-
     EndPosition = 0
-
     rangeData = 0
-
     start = 0
-
     new_InputData = []
-
     para_thesis_List = []
-
     if "(" in InputData:
 
         startPosition = InputData.index("(")
@@ -2344,13 +3310,10 @@ def bracket_solu(InputData):
 
 
 def isfloat(num):
-
+    print(num)
     try:
-
         float(num)
-
         return True
-
     except ValueError:
 
         return False
@@ -2843,7 +3806,7 @@ IOTopower = customtkinter.CTkButton(
 )
 IOTopower.grid(column=3, row=8, padx=(0, 3), pady=(0, 5))
 
-Ans = customtkinter.CTkButton(
+Answer = customtkinter.CTkButton(
     master=Btns_innserFrame_innerFrame,
     text="Ans",
     font=("Roboto", 20),
@@ -2852,13 +3815,7 @@ Ans = customtkinter.CTkButton(
     command=lambda: Calc_input_display("Ans"),
     fg_color="red",
 )
-Ans.grid(column=4, row=8, padx=(0, 3), pady=(0, 5))
+Answer.grid(column=4, row=8, padx=(0, 3), pady=(0, 5))
 
 
 root.mainloop()
-# M+
-# MR
-# M-
-# MS
-# MC
-# %
